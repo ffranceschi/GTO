@@ -92,7 +92,7 @@ export function SpotForm({ value, onChange, onSubmit, errors, busy }: Props) {
         {t.spot.board}
         <input value={value.board} onChange={(e) => set("board")(e.target.value)} placeholder="Ks 7d 2c Jh 3s" />
       </label>
-      {cards.length !== 5 && <small className="warn">{t.spot.boardRiverOnly}</small>}
+      {(cards.length < 3 || cards.length > 5) && <small className="warn">{t.spot.boardSize}</small>}
       {errors["spot.board"] && <small className="error">{errors["spot.board"]}</small>}
       <div className="row">
         <label>
@@ -132,7 +132,7 @@ export function SpotForm({ value, onChange, onSubmit, errors, busy }: Props) {
         </label>
       </details>
       {errors._ && <p className="error">{errors._}</p>}
-      <button type="submit" disabled={busy || cards.length !== 5}>
+      <button type="submit" disabled={busy || cards.length < 3 || cards.length > 5}>
         {t.spot.solve}
       </button>
     </form>

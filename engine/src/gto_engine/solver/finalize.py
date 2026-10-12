@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from gto_engine.game.tree import NODE_CHANCE, NODE_DECISION, GameTree
-from gto_engine.solver.kernels import finalize_traverse, record_decision
+from gto_engine.solver.kernels import add_isomorphic, finalize_traverse, record_decision
 
 CHUNK_NODES = 2_000
 
@@ -64,6 +64,7 @@ def finalize(
                     ch, trav, np.where(ok, rt, 0.0), np.where(np.any(hc_o == x, axis=1), 0.0, ro)
                 )
                 v += np.where(ok, f * vc, 0.0)
+                add_isomorphic(T, ch, trav, f, vc, v)
             return v
         p = tree.player_index(node)
         sl = tree.strategy_slice(node)

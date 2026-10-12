@@ -579,6 +579,11 @@ export interface components {
             terminal?: {
                 /** @enum {string} */
                 kind?: "fold" | "showdown";
+                /** @description Resultado esperado (EV em bb e equity) de cada combo dos dois jogadores */
+                results?: {
+                    player?: components["schemas"]["Position"];
+                    combos?: components["schemas"]["ComboView"][];
+                }[];
             } | null;
             /** @description Cabeçalho da solução exibido em todos os nós (Princípio II) */
             solution?: {

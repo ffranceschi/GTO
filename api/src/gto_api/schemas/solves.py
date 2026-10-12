@@ -186,8 +186,14 @@ class RangeAtNode(BaseModel):
     weights: list[float]
 
 
+class TerminalResult(BaseModel):
+    player: Literal["oop", "ip"]
+    combos: list[ComboView]
+
+
 class Terminal(BaseModel):
     kind: Literal["fold", "showdown"]
+    results: list[TerminalResult] = []
 
 
 class SolutionSummary(BaseModel):

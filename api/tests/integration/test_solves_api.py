@@ -49,12 +49,6 @@ def test_criacao_responde_em_ate_200ms(client: TestClient) -> None:
             "OOP",
         ),
         ({"oop_range": {"notation": "AKx"}}, "range_invalido", "AKx"),
-        ({"board": ["Ks", "7d", "2c"]}, "street_nao_suportada", "Nesta versão só spots de river"),
-        (
-            {"board": ["Ks", "7d", "2c", "Jh"]},
-            "street_nao_suportada",
-            "Nesta versão só spots de river",
-        ),
     ],
 )
 def test_erros_422_pt_br(

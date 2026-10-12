@@ -105,10 +105,6 @@ def _get_row(request: Request, solve_id: str) -> SolveRow:
 async def create_solve(req: SolveRequest, request: Request) -> Any:
     settings = request.app.state.settings
     spot = req.spot.to_engine()
-    if len(spot.board) != 5:
-        raise ApiError(
-            422, "street_nao_suportada", "Nesta versão só spots de river podem ser resolvidos."
-        )
     cfg = req.tree.to_engine()
     params = req.params.to_engine()
     est = estimate_tree(spot, cfg)
@@ -283,7 +279,15 @@ async def get_node(solve_id: str, request: Request, path: Annotated[str, Query()
             "hands": [h.__dict__ for h in v.hands],
             "combos": [c.__dict__ for c in v.combos],
             "ranges": [r.__dict__ for r in v.ranges],
-            "terminal": {"kind": v.terminal} if v.terminal else None,
+            "terminal": {
+                "kind": v.terminal,
+                "results": [
+                    {"player": r.player, "combos": [c.__dict__ for c in r.combos]}
+                    for r in (v.terminal_results or [])
+                ],
+            }
+            if v.terminal
+            else None,
             "solution": SolutionSummary(
                 exploitability_pct=row.exploitability_pct,
                 iterations=row.iterations,

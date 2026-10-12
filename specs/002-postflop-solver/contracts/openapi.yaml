@@ -641,6 +641,14 @@ components:
           type: [object, "null"]
           properties:
             kind: { type: string, enum: [fold, showdown] }
+            results:
+              type: array
+              description: Resultado esperado (EV em bb e equity) de cada combo dos dois jogadores
+              items:
+                type: object
+                properties:
+                  player: { $ref: "#/components/schemas/Position" }
+                  combos: { type: array, items: { $ref: "#/components/schemas/ComboView" } }
         solution:
           type: [object, "null"]
           description: Cabeçalho da solução exibido em todos os nós (Princípio II)

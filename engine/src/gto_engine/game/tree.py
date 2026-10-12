@@ -89,6 +89,8 @@ class _Node:
     chance_card: int = -1  # carta revelada ao chegar neste nó (-1 se nenhuma)
     chance_factor: float = 0.0  # nós de chance: 1 / nº de cartas possíveis dado as mãos
     boards: tuple[int, ...] = ()  # decisão: boards finais possíveis (para a equity do nó)
+    street: str = "river"
+    iso: list[tuple[int, int]] = field(default_factory=list)  # filho de chance: [(carta y, k⁻¹)]
 
 
 class TreeAssembler:
@@ -126,6 +128,7 @@ class GameTree:
         strengths: tuple[np.ndarray, np.ndarray],
         street: Street = Street.RIVER,
         hand_label: Any = None,
+        hand_perms: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
         self._nodes = assembler.nodes
         self.players = players
@@ -134,6 +137,8 @@ class GameTree:
         self.street = street
         self._hand_label = hand_label
         self.effective_stack = 0.0
+        self.initial_board: tuple[int, ...] = ()
+        self.group: list[int] = [0]
         self.root = 0
         n = len(self._nodes)
         self.node_type = np.array([nd.kind for nd in self._nodes], dtype=np.int64)
@@ -183,6 +188,27 @@ class GameTree:
         self.dec_combo_offset = np.array([*coffs, co], dtype=np.int64)
         self.strategy_size = o
         self.combo_size = co
+        # isomorfismo: entradas extras de cada filho de chance (carta y, permutação k⁻¹)
+        istart: list[int] = []
+        icard: list[int] = []
+        iperm: list[int] = []
+        for nd in self._nodes:
+            istart.append(len(icard))
+            for y, kinv in nd.iso:
+                icard.append(y)
+                iperm.append(kinv)
+        self.iso_start = np.array([*istart, len(icard)], dtype=np.int64)
+        self.iso_card = np.array(icard, dtype=np.int64)
+        self.iso_perm = np.array(iperm, dtype=np.int64)
+        if hand_perms is None:
+            hand_perms = tuple(  # type: ignore[assignment]
+                np.vstack(
+                    [np.arange(len(h), dtype=np.int64)] + [np.full(len(h), -1, dtype=np.int64)] * 23
+                )
+                for h in players.hands
+            )
+        assert hand_perms is not None
+        self.hand_perms = hand_perms  # (24, n_p): índice da mão π_k(h) na lista do jogador, ou -1
         self.strengths = strengths  # (n_boards, n_p) int32 por jogador; -1 = bloqueado
         self.orders = tuple(
             np.argsort(s, axis=1, kind="stable").astype(np.int64) for s in strengths
@@ -203,6 +229,12 @@ class GameTree:
 
     def decision_shapes(self) -> list[tuple[int, int]]:
         return [(len(self._nodes[i].children), self._nodes[i].player) for i in self.dec_node]
+
+    def street_of(self, node: int) -> str:
+        return self._nodes[node].street
+
+    def iso_members(self, node: int) -> list[tuple[int, int]]:
+        return list(self._nodes[node].iso)
 
     def node_kind(self, node: int) -> str:
         return _KIND[self._nodes[node].kind]

@@ -42,6 +42,11 @@ KTree = namedtuple(
         "dec_combo_offset",
         "dec_board_start",
         "dec_boards",
+        "iso_start",
+        "iso_card",
+        "iso_perm",
+        "perm0",
+        "perm1",
     ],
 )
 
@@ -85,6 +90,11 @@ def kernel_tree(tree: GameTree) -> KTree:
         tree.dec_combo_offset,
         tree.dec_board_start,
         tree.dec_boards,
+        tree.iso_start,
+        tree.iso_card,
+        tree.iso_perm,
+        np.ascontiguousarray(tree.hand_perms[0]),
+        np.ascontiguousarray(tree.hand_perms[1]),
     )
 
 

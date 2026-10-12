@@ -45,7 +45,8 @@ def test_river_contagem_e_bytes(
     tree = build_tree(spot, cfg)
     assert est.decision_nodes == tree.n_decision_nodes
     alocado = allocate_solver_arrays(tree).nbytes
-    assert est.estimated_bytes == pytest.approx(alocado * 1.2, rel=0.15)
+    tabelas = sum(a.nbytes for a in (*tree.strengths, *tree.orders))
+    assert est.estimated_bytes == pytest.approx(alocado * 1.2 + tabelas, rel=0.15)
     assert est.isomorphism_factor == 1.0
     combos = [tree.n_hands(p) for p in ("oop", "ip")]
     sol = sum(a * combos[pl] * 4 + combos[pl] * 8 for a, pl in tree.decision_shapes())

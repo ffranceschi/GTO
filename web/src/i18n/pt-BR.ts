@@ -6,7 +6,7 @@ export const t = {
     oopRange: "Range OOP",
     ipRange: "Range IP",
     board: "Board",
-    boardRiverOnly: "Nesta versão só spots de river (5 cartas); flop e turn chegam na próxima versão.",
+    boardSize: "O board deve ter 3 (flop), 4 (turn) ou 5 (river) cartas.",
     pot: "Pote (bb)",
     stack: "Stack efetivo (bb)",
     target: "Explotabilidade alvo (% do pote)",
@@ -63,6 +63,14 @@ export const t = {
     equity: "Equity",
     outOfRange: "Fora do range neste nó",
     selectHand: "Clique numa célula para ver os combos.",
+  },
+  nav: {
+    root: "Raiz",
+    chooseCard: "Escolha a carta que sai",
+    terminal: { fold: "Fim da linha: fold", showdown: "Fim da linha: showdown" } as Record<string, string>,
+    expected: "Resultado esperado por combo",
+    stacks: (oop: string, ip: string) => `Stacks: OOP ${oop} · IP ${ip}`,
+    rangesTitle: "Ranges que chegam ao nó",
   },
   errors: {
     generic: "Erro inesperado.",

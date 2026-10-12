@@ -7,7 +7,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from gto_engine.cards import N_COMBOS, combo_str
+from gto_engine.cards import N_CARDS, N_COMBOS, card_str, combo_str, parse_card
+from gto_engine.game.isomorphism import IDENTITY, compose, permute_card
 from gto_engine.game.tree import (
     NODE_CHANCE,
     NODE_DECISION,
@@ -18,6 +19,7 @@ from gto_engine.game.tree import (
 )
 from gto_engine.io.solution_dir import Solution
 from gto_engine.ranges.notation import HAND_COMBOS, hand_name
+from gto_engine.solver.kernels import compat_sums, showdown_sums
 
 # índice de célula (0..168) de cada combo
 _CELL = np.empty(N_COMBOS, dtype=np.int64)
@@ -66,6 +68,12 @@ class RangeAtNode:
 
 
 @dataclass(frozen=True)
+class TerminalResult:
+    player: str
+    combos: list[ComboView]
+
+
+@dataclass(frozen=True)
 class NodeView:
     path: list[str]
     breadcrumb: list[str]
@@ -79,6 +87,7 @@ class NodeView:
     ranges: list[RangeAtNode]
     next_cards: list[str]
     terminal: str | None  # fold | showdown
+    terminal_results: list[TerminalResult] | None = None
 
 
 def _strategy(tree: GameTree, solution: Solution, node: int) -> np.ndarray:
@@ -89,27 +98,42 @@ def _strategy(tree: GameTree, solution: Solution, node: int) -> np.ndarray:
 
 
 def node_view(tree: GameTree, solution: Solution, path: Sequence[str]) -> NodeView:
+    """Caminho em cartas reais; nós sob cartas isomorfas usam a canônica com mãos permutadas."""
     reach = [tree.players.weights[0].copy(), tree.players.weights[1].copy()]
     node = tree.root
     crumbs: list[str] = []
+    frame = IDENTITY  # permutação de naipes: cartas reais → referencial da subárvore canônica
+    board = list(tree.initial_board)
     for step in path:
         kind = int(tree.node_type[node])
         if kind not in (NODE_DECISION, NODE_CHANCE):
             raise InvalidPathError(f"O caminho continua depois de um nó terminal ('{step}').")
-        acts = tree.actions(node)
-        ids = [a.id for a in acts]
-        if step not in ids:
-            raise InvalidPathError(f"A ação '{step}' não existe neste nó.")
-        a = ids.index(step)
         if kind == NODE_DECISION:
+            acts = tree.actions(node)
+            ids = [a.id for a in acts]
+            if step not in ids:
+                raise InvalidPathError(f"A ação '{step}' não existe neste nó.")
+            a = ids.index(step)
             p = tree.player_index(node)
-            reach[p] = reach[p] * _strategy(tree, solution, node)[a]
-        else:
-            x = int(tree.chance_card[tree.children(node)[a]])
-            for p in (0, 1):
-                reach[p] = np.where(np.any(tree.players.hand_cards[p] == x, axis=1), 0.0, reach[p])
-        crumbs.append(acts[a].label)
-        node = tree.children(node)[a]
+            idx = tree.hand_perms[p][frame]
+            reach[p] = reach[p] * _strategy(tree, solution, node)[a][idx]
+            crumbs.append(acts[a].label)
+            node = tree.children(node)[a]
+            continue
+        try:
+            y_real = parse_card(step)
+        except ValueError as exc:
+            raise InvalidPathError(f"Carta inválida no caminho: '{step}'.") from exc
+        if y_real in board:
+            raise InvalidPathError(f"A carta {step} não pode sair: já está no board.")
+        y = permute_card(y_real, frame)
+        child, kinv = _chance_child(tree, node, y)
+        frame = compose(kinv, frame)
+        for p in (0, 1):
+            reach[p] = np.where(np.any(tree.players.hand_cards[p] == y_real, axis=1), 0.0, reach[p])
+        board.append(y_real)
+        crumbs.append(card_str(y_real))
+        node = child
 
     inv = tree.investments(node)
     stack0 = _initial_stack(tree)
@@ -130,6 +154,7 @@ def node_view(tree: GameTree, solution: Solution, path: Sequence[str]) -> NodeVi
         combos: list[ComboView] | None = None,
         next_cards: list[str] | None = None,
         terminal: str | None = None,
+        results: list[TerminalResult] | None = None,
     ) -> NodeView:
         return NodeView(
             list(path),
@@ -144,21 +169,27 @@ def node_view(tree: GameTree, solution: Solution, path: Sequence[str]) -> NodeVi
             ranges,
             next_cards or [],
             terminal,
+            results,
         )
 
     if kind == NODE_CHANCE:
-        return make("chance", next_cards=[a.id for a in tree.actions(node)])
+        return make("chance", next_cards=[card_str(c) for c in range(N_CARDS) if c not in board])
     if kind != NODE_DECISION:
-        return make("terminal", terminal="fold" if kind == NODE_FOLD else "showdown")
+        return make(
+            "terminal",
+            terminal="fold" if kind == NODE_FOLD else "showdown",
+            results=_terminal_results(tree, node, reach),
+        )
 
     p = tree.player_index(node)
     acts = tree.actions(node)
-    sig = _strategy(tree, solution, node)
+    idx = tree.hand_perms[p][frame]
+    sig = _strategy(tree, solution, node)[:, idx]
     r = reach[p]
     tot = float(r.sum())
     csl = tree.combo_slice(node)
-    ev = np.asarray(solution.ev[csl], dtype=np.float64)
-    eq = np.asarray(solution.equity[csl], dtype=np.float64)
+    ev = np.asarray(solution.ev[csl], dtype=np.float64)[idx]
+    eq = np.asarray(solution.equity[csl], dtype=np.float64)[idx]
     weighted = sig * r  # (A, n)
     actions = [
         ActionView(
@@ -205,3 +236,50 @@ def node_view(tree: GameTree, solution: Solution, path: Sequence[str]) -> NodeVi
 
 def _initial_stack(tree: GameTree) -> float:
     return float(tree.effective_stack)
+
+
+def _chance_child(tree: GameTree, node: int, y: int) -> tuple[int, int]:
+    """Filho canônico para a carta `y` (no referencial atual) e a permutação k⁻¹ (y → canônica)."""
+    for child in tree.children(node):
+        if int(tree.chance_card[child]) == y:
+            return child, IDENTITY
+        for card, kinv in tree.iso_members(child):
+            if card == y:
+                return child, kinv
+    raise InvalidPathError(f"A carta {card_str(y)} não pode sair neste nó.")
+
+
+def _terminal_results(tree: GameTree, node: int, reach: list[np.ndarray]) -> list[TerminalResult]:
+    """EV (bb) e equity esperados de cada combo no nó terminal, para os dois jogadores."""
+    T = tree.kernel
+    out: list[TerminalResult] = []
+    for p in (0, 1):
+        o = 1 - p
+        hc_t, hc_o = tree.players.hand_cards[p], tree.players.hand_cards[o]
+        same = T.same0 if p == 0 else T.same1
+        compat = compat_sums(reach[o], hc_t, hc_o, same, T.n_cards, T.k)
+        c_t, c_o = tree.investments(node)[p], tree.investments(node)[o]
+        if int(tree.node_type[node]) == NODE_FOLD:
+            folder = tree.player_index(node)
+            ev = np.full(len(compat), -c_t if folder == p else tree.pot + c_o)
+            eq = np.full(len(compat), 0.0 if folder == p else 1.0)
+        else:
+            b = int(tree.board_id[node])
+            st, so = (T.str0, T.str1) if p == 0 else (T.str1, T.str0)
+            ot, oo = (T.ord0, T.ord1) if p == 0 else (T.ord1, T.ord0)
+            win, lose = showdown_sums(b, reach[o], hc_t, hc_o, st, so, ot, oo, T.n_cards, T.k)
+            tie = compat - win - lose
+            with np.errstate(invalid="ignore", divide="ignore"):
+                ev = np.where(
+                    compat > 0,
+                    (win * (tree.pot + c_o) - lose * c_t + tie * tree.pot / 2) / compat,
+                    0.0,
+                )
+                eq = np.clip(np.where(compat > 0, (win + tie / 2) / compat, 0.0), 0.0, 1.0)
+        combos = [
+            ComboView(combo_str(int(h)), float(reach[p][i]), {}, float(ev[i]), float(eq[i]))
+            for i, h in enumerate(tree.players.hands[p])
+            if reach[p][i] > 0
+        ]
+        out.append(TerminalResult(PLAYERS[p], combos))
+    return out

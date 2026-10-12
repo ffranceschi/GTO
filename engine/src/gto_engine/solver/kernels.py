@@ -141,6 +141,24 @@ def _terminal(T, node, trav, reach_opp):
 
 
 @njit(cache=True, nogil=True)
+def add_isomorphic(T, ch, trav, f, vc, v):
+    """Soma em `v` os valores das cartas isomorfas à carta canônica do filho `ch` (R5)."""
+    hc_t = T.hc0 if trav == 0 else T.hc1
+    perm = T.perm0 if trav == 0 else T.perm1
+    n_t = v.shape[0]
+    for m in range(T.iso_start[ch], T.iso_start[ch + 1]):
+        y = T.iso_card[m]
+        k = T.iso_perm[m]
+        for h in range(n_t):
+            blocked = False
+            for c in range(T.k):
+                if hc_t[h, c] == y:
+                    blocked = True
+            if not blocked:
+                v[h] += f * vc[perm[k, h]]
+
+
+@njit(cache=True, nogil=True)
 def current_strategy(regrets, off, A, n):
     sig = np.empty((A, n))
     for h in range(n):
@@ -234,6 +252,7 @@ def traverse(
             for h in range(n_t):
                 if ok[h]:
                     v[h] += f * vc[h]
+            add_isomorphic(T, ch, trav, f, vc, v)
         return v
     # nó de decisão
     p = T.node_player[node]
@@ -467,6 +486,7 @@ def finalize_traverse(T, node, trav, reach_trav, reach_opp, sigma, ev, eq):
             for h in range(n_t):
                 if ok[h]:
                     v[h] += f * vc[h]
+            add_isomorphic(T, ch, trav, f, vc, v)
         return v
     p = T.node_player[node]
     d = T.dec_index[node]

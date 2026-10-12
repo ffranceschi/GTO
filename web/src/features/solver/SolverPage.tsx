@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { initialJobState, jobEventsUrl, subscribeJob, type JobState } from "../../api/jobEvents";
 import { t } from "../../i18n/pt-BR";
-import { NodeStrategy } from "./NodeStrategy";
+import { TreeNavigator } from "./TreeNavigator";
 import { SolveProgress } from "./SolveProgress";
 import { SpotForm } from "./SpotForm";
 import { DEFAULT_FORM, toRequest, type SpotFormState } from "./types";
@@ -55,7 +55,7 @@ export function SolverPage() {
           onNewSolve={() => submit(form)}
         />
       )}
-      {solveId && done && !stale && <NodeStrategy key={solveId} solveId={solveId} />}
+      {solveId && done && !stale && <TreeNavigator key={solveId} solveId={solveId} />}
     </main>
   );
 }

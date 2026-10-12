@@ -22,3 +22,12 @@ dt { color: #666; }
 .detail td, .detail th, table.actions td, table.actions th { padding: 2px 8px; border-bottom: 1px solid #eee; text-align: left; }
 tr.out { color: #999; }
 .solution-header { font-weight: 600; }
+.breadcrumb button { background: none; border: none; color: #1f5fbf; padding: 0; margin: 0; cursor: pointer; }
+.breadcrumb button[aria-current="true"] { font-weight: 700; color: #1d1d1f; }
+.action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.card-row { display: flex; gap: 4px; margin-bottom: 4px; }
+.card { width: 38px; padding: 4px 0; margin: 0; }
+.suit-h, .suit-d { color: #c0392b; }
+.card:disabled { opacity: 0.3; }
+.terminal-results { display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.85rem; }
+.navigator { background: #fff; border: 1px solid #e3e3e3; border-radius: 8px; padding: 12px 16px; }

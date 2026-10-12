@@ -4,23 +4,35 @@ import { RangeGrid, actionColors, type CellData } from "../../components/RangeGr
 import { formatBb, formatNumber, formatPct, formatPctValue } from "../../i18n/format";
 import { t } from "../../i18n/pt-BR";
 
-export function NodeStrategy({ solveId, path = "" }: { solveId: string; path?: string }) {
+export function useNodeView(solveId: string, path: string) {
   const [view, setView] = useState<NodeView | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-
   useEffect(() => {
     let alive = true;
-    api.GET("/solves/{solve_id}/nodes", { params: { path: { solve_id: solveId }, query: { path } } }).then(({ data, error }) => {
-      if (!alive) return;
-      if (error) setError(problemMessage(error));
-      else setView(data ?? null);
-    });
+    setError(null);
+    api
+      .GET("/solves/{solve_id}/nodes", { params: { path: { solve_id: solveId }, query: { path } } })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) setError(problemMessage(error));
+        else setView(data ?? null);
+      });
     return () => {
       alive = false;
     };
   }, [solveId, path]);
+  return { view, error };
+}
 
+export function NodeStrategy({ solveId, path = "" }: { solveId: string; path?: string }) {
+  const { view, error } = useNodeView(solveId, path);
+  if (error) return <p className="error">{error}</p>;
+  if (!view) return <p>Carregando…</p>;
+  return <NodeStrategyView view={view} />;
+}
+
+export function NodeStrategyView({ view, showHeader = true }: { view: NodeView; showHeader?: boolean }) {
+  const [selected, setSelected] = useState<string | null>(null);
   const actions = view?.actions ?? [];
   const colors = useMemo(() => actionColors(actions), [actions]);
   const cells = useMemo(() => {
@@ -32,15 +44,13 @@ export function NodeStrategy({ solveId, path = "" }: { solveId: string; path?: s
     return out;
   }, [view, actions]);
 
-  if (error) return <p className="error">{error}</p>;
-  if (!view) return <p>Carregando…</p>;
   const sol = view.solution;
   const hand = view.hands?.find((h) => h.hand === selected);
   const combos = (view.combos ?? []).filter((c) => selected && cellOf(c.combo) === selected);
 
   return (
     <section className="node-strategy">
-      {sol && (
+      {showHeader && sol && (
         <p className="solution-header" data-testid="solution-header">
           {t.node.solutionHeader(
             sol.exploitability_pct == null ? "—" : `${formatPctValue(sol.exploitability_pct, 3)} do pote`,
