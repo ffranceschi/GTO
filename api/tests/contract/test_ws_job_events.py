@@ -69,3 +69,13 @@ def test_reconexao_recebe_snapshot_e_job_continua(client: TestClient) -> None:
         nxt = ws.receive_json()
         assert nxt["seq"] > snap["seq"]
     client.portal.call(client.app.state.runner.control, "j2", "cancel")  # type: ignore[union-attr,attr-defined]
+
+
+def test_job_ja_terminado_snapshot_antes_do_finished(client: TestClient) -> None:
+    submit(client, Job("j3", "test", LOOP, {"blocks": 2, "block_s": 0.01}))
+    time.sleep(0.5)
+    with client.websocket_connect("/api/v1/jobs/j3/events") as ws:
+        snap = ws.receive_json()
+        fin = ws.receive_json()
+    assert snap["type"] == "snapshot" and fin["type"] == "finished"
+    assert fin["seq"] > snap["seq"]

@@ -44,6 +44,9 @@ class Settings:
     use_processes: bool = field(
         default_factory=lambda: os.environ.get("GTO_RUNNER", "process") == "process"
     )
+    periodic_cleanup: bool = field(
+        default_factory=lambda: os.environ.get("GTO_PERIODIC_CLEANUP", "1") == "1"
+    )
 
     @property
     def solutions_dir(self) -> Path:

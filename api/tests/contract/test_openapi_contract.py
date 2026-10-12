@@ -14,20 +14,14 @@ from fastapi.testclient import TestClient
 
 CONTRACT = Path(__file__).resolve().parents[3] / "specs/002-postflop-solver/contracts/openapi.yaml"
 SPEC: dict[str, Any] = yaml.safe_load(CONTRACT.read_text())
-STORY = {
-    "/solves/{solve_id}/exports": "US4",
-    "/solutions/import": "US4",
-    "/aux-jobs/{job_id}": "US4",
-    "/aux-jobs/{job_id}/file": "US4",
-    "/storage": "US4",
-}
+STORY: dict[str, str] = {}
 CASES = [
     pytest.param(
         path,
         method,
         id=f"{method.upper()} {path}",
         marks=[pytest.mark.xfail(reason=f"implementado na {STORY.get(path, 'US4')}", strict=False)]
-        if path in STORY or (path == "/solves/{solve_id}" and method == "patch")
+        if path in STORY
         else [],
     )
     for path, ops in SPEC["paths"].items()

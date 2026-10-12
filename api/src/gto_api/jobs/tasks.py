@@ -57,3 +57,68 @@ def solve_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[s
         "solution_dir": sol.meta.input_hash,
         "size_bytes": size,
     }
+
+
+def _progress(emit: Emit) -> Callable[[float], None]:
+    return lambda f: emit({"type": "progress", "progress": round(float(f), 4)})
+
+
+def export_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[str, Any]:
+    from gto_engine.io.exchange import Cancelled, export_npz
+
+    target = Path(payload["exports_dir"]) / f"{payload['job_id']}.npz"
+    try:
+        export_npz(
+            Path(payload["solutions_dir"]) / payload["solution_dir"], target, ctl, _progress(emit)
+        )
+    except Cancelled as exc:
+        raise JobCancelled() from exc
+    return {"status": "completed", "result_path": target.name, "solve_id": payload["solve_id"]}
+
+
+def import_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[str, Any]:
+    from dataclasses import asdict
+
+    from gto_engine.io.exchange import Cancelled, import_npz
+    from gto_engine.io.solution_dir import dir_size
+
+    source = Path(payload["source"])
+    staging = Path(payload["solutions_dir"]) / f"import-{payload['job_id']}"
+    try:
+        meta = import_npz(source, staging, ctl, _progress(emit))
+        name = f"{meta.input_hash}.{payload['job_id'][:8]}"
+        final = staging.with_name(name)
+        staging.rename(final)
+    except Cancelled as exc:
+        raise JobCancelled() from exc
+    finally:
+        source.unlink(missing_ok=True)
+    return {
+        "status": "completed",
+        "solve_id": payload["solve_id"],
+        "solution_dir": name,
+        "size_bytes": dir_size(final),
+        "meta": asdict(meta),
+    }
+
+
+def cleanup_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[str, Any]:
+    import shutil
+
+    candidates: list[list[str]] = payload["candidates"]
+    exports: list[str] = payload["expired_exports"]
+    total = len(candidates) + len(exports)
+    removed: list[str] = []
+    emit({"type": "progress", "progress": 0.0})
+    for i, (solve_id, solution_dir) in enumerate(candidates):
+        if ctl.should_stop():
+            break
+        shutil.rmtree(Path(payload["solutions_dir"]) / solution_dir, ignore_errors=True)
+        removed.append(solve_id)
+        emit({"type": "progress", "progress": round((i + 1) / total, 4)})
+    for j, name in enumerate(exports):
+        if ctl.should_stop():
+            break
+        (Path(payload["exports_dir"]) / name).unlink(missing_ok=True)
+        emit({"type": "progress", "progress": round((len(candidates) + j + 1) / total, 4)})
+    return {"status": "completed", "removed": removed}

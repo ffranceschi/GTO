@@ -218,7 +218,8 @@ class LaneJobRunner:
             "type": "snapshot",
             "job_id": job_id,
             "job_kind": st.job.kind,
-            "seq": max(st.seq, 0),
+            # job terminado: o snapshot precede o `finished` (seq menor), senão o cliente o descarta
+            "seq": max(st.seq - (1 if st.finished is not None else 0), 0),
             "status": st.status,
             "queue_position": self.queue_position(job_id),
             **st.job.meta,

@@ -36,3 +36,8 @@ tr.out { color: #999; }
 .tree-editor .check { display: flex; align-items: center; gap: 4px; }
 .tree-editor .check input { width: auto; }
 .estimate .ok { color: #2e7d32; }
+.tabs { display: flex; gap: 4px; max-width: 1200px; margin: 0 auto; padding: 8px 16px 0; }
+.tabs button[aria-selected="true"] { font-weight: 700; border-bottom: 2px solid #1f5fbf; }
+table.solutions { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+table.solutions td, table.solutions th { padding: 4px 8px; border-bottom: 1px solid #eee; text-align: left; }
+table.solutions tr.soon td { background: #fff4d6; }

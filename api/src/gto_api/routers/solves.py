@@ -17,6 +17,7 @@ from sqlalchemy import select
 from gto_api.db.models import SolveRow, new_id, now_utc
 from gto_api.errors import ApiError, not_found
 from gto_api.jobs.runner import Job, JobStateError, UnknownJobError
+from gto_api.schemas.aux import PinRequest
 from gto_api.schemas.solves import (
     NodeView,
     Problem,
@@ -222,6 +223,26 @@ async def resume_solve(solve_id: str, request: Request) -> Response:
 )
 async def stop_solve(solve_id: str, request: Request) -> Response:
     return await _control(request, solve_id, "stop")
+
+
+@router.patch(
+    "/solves/{solve_id}",
+    operation_id="updateSolve",
+    response_model=Solve,
+    responses={404: PROBLEM, 409: PROBLEM},
+)
+def update_solve(solve_id: str, body: PinRequest, request: Request) -> Solve:
+    """Fixa ou desafixa uma solução (FR-029)."""
+    with request.app.state.db.session() as s:
+        row = s.get(SolveRow, solve_id)
+        if row is None:
+            raise not_found("Solve")
+        if row.status not in WITH_SOLUTION:
+            raise ApiError(
+                409, "solucao_indisponivel", "Só soluções concluídas ou paradas podem ser fixadas."
+            )
+        row.pinned = body.pinned
+    return to_schema(request, _get_row(request, solve_id))
 
 
 @router.delete(

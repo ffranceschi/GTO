@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -19,6 +20,8 @@ from gto_api.jobs.persist import make_event_hook, make_snapshot_lookup
 from gto_api.schemas.health import Health
 from gto_api.settings import Settings
 from gto_api.ws import job_events
+
+CLEANUP_INTERVAL_S = 6 * 3600  # research R14: no startup e a cada 6 h
 
 
 def create_app(settings: Settings | None = None, runner: LaneJobRunner | None = None) -> FastAPI:
@@ -49,9 +52,31 @@ def create_app(settings: Settings | None = None, runner: LaneJobRunner | None = 
             hook(app)
         # warm-up em segundo plano: /health responde warming_up até terminar
         app.state.warmup_task = asyncio.create_task(r.start())
+
+        async def schedule_cleanup() -> str:
+            from gto_api.routers.aux_jobs import schedule_cleanup as run
+
+            return await run(app)
+
+        app.state.schedule_cleanup = schedule_cleanup
+
+        async def periodic_cleanup() -> None:
+            await app.state.warmup_task
+            while True:
+                try:
+                    await schedule_cleanup()
+                except Exception:  # limpeza não pode derrubar o serviço
+                    logging.getLogger(__name__).exception("falha ao agendar a limpeza")
+                await asyncio.sleep(CLEANUP_INTERVAL_S)
+
+        cleanup_task = (
+            asyncio.create_task(periodic_cleanup()) if settings.periodic_cleanup else None
+        )
         try:
             yield
         finally:
+            if cleanup_task:
+                cleanup_task.cancel()
             await r.shutdown()
 
     app = FastAPI(
@@ -93,8 +118,9 @@ def create_app(settings: Settings | None = None, runner: LaneJobRunner | None = 
 
 def _include_routers(app: FastAPI) -> None:
     """Cada story registra aqui o seu router (T042)."""
-    from gto_api.routers import ranges, solves, tree_configs, trees
+    from gto_api.routers import aux_jobs, ranges, solves, tree_configs, trees
 
+    app.include_router(aux_jobs.router)
     app.include_router(ranges.router)
     app.include_router(solves.router)
     app.include_router(trees.router)

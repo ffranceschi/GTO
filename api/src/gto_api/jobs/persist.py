@@ -52,12 +52,54 @@ def make_event_hook(db: Database) -> Any:
                 else:
                     if status == "completed":
                         row.progress = 1.0
-                    if ev.get("result_path"):
-                        row.result_path = ev["result_path"]
-                    if ev.get("solve_id"):
-                        row.solve_id = ev["solve_id"]
+                        _apply_aux_result(s, job, ev, row)
 
     return on_event
+
+
+def _apply_aux_result(s: Any, job: Job, ev: JobEvent, row: AuxJobRow) -> None:
+    """Efeitos de um job auxiliar concluído: uso da solução, solve importado, expiração."""
+    if job.kind == "export":
+        row.result_path = ev.get("result_path")
+        solve = s.get(SolveRow, job.payload["solve_id"])
+        if solve is not None:
+            solve.last_used_at = now_utc()  # exportar conta como uso (FR-028)
+    elif job.kind == "import":
+        meta = ev["meta"]
+        spot = meta["spot"]
+        s.add(
+            SolveRow(
+                id=job.payload["solve_id"],
+                input_hash=meta["input_hash"],
+                status="completed",
+                origin="import",
+                spot_json={
+                    "oop_range": {"notation": spot["oop_range"]},
+                    "ip_range": {"notation": spot["ip_range"]},
+                    "board": spot["board"],
+                    "pot": spot["pot"],
+                    "effective_stack": spot["effective_stack"],
+                },
+                tree_config_json=meta["tree_config"],
+                params_json=meta["solve_params"],
+                iterations=meta["iterations"],
+                exploitability_pct=meta["final_exploitability_pct"],
+                stop_reason=meta["stop_reason"],
+                solution_dir=ev["solution_dir"],
+                size_bytes=ev["size_bytes"],
+                last_used_at=now_utc(),
+                finished_at=now_utc(),
+            )
+        )
+        s.flush()
+        row.solve_id = job.payload["solve_id"]
+    elif job.kind == "cleanup":
+        for solve_id in ev.get("removed", []):
+            solve = s.get(SolveRow, solve_id)
+            if solve is not None:
+                solve.status = "expired"
+                solve.solution_dir = None
+                solve.size_bytes = None
 
 
 def make_snapshot_lookup(db: Database) -> Any:
