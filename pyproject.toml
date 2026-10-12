@@ -35,7 +35,7 @@ module = ["numba.*", "phevaluator.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["gto_engine.evaluator.kernels", "gto_engine.solver.kernels", "gto_engine.solver.finalize_kernels"]
+module = ["gto_engine.evaluator.kernels", "gto_engine.solver.kernels", "gto_engine.solver.finalize_kernels", "gto_engine.equity.exact", "gto_engine.equity.montecarlo", "gto_engine.equity.rng"]
 disallow_untyped_decorators = false
 disallow_untyped_defs = false
 disallow_untyped_calls = false

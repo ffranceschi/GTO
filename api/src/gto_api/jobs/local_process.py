@@ -33,7 +33,7 @@ from gto_api.jobs.worker import init_worker, worker_main
 
 log = logging.getLogger(__name__)
 MAX_RATE_S = 0.2  # ≤ 5 mensagens de progresso por segundo
-LANES: tuple[Lane, ...] = ("solve", "aux")
+LANES: tuple[Lane, ...] = ("solve", "aux", "equity")
 
 
 @dataclass
@@ -79,6 +79,8 @@ class LaneJobRunner:
         self._closing = False
         self._watchdog: asyncio.Task[None] | None = None
         self.ready: asyncio.Event | None = None  # definido em start()
+        # avaliações/s do kernel exato de equity medidas no worker aquecido (research R4 da 001)
+        self.equity_rate: float | None = None
 
     # ---------------- ciclo de vida ----------------
     async def start(self) -> None:
@@ -99,6 +101,9 @@ class LaneJobRunner:
             # força a criação e o aquecimento do worker de cada raia antes de aceitar jobs
             await asyncio.gather(
                 *(self._loop.run_in_executor(self._executors[lane], _noop) for lane in LANES)
+            )
+            self.equity_rate = await self._loop.run_in_executor(
+                self._executors["equity"], _measure_equity_rate
             )
         self.ready.set()
 
@@ -364,8 +369,10 @@ class LaneJobRunner:
             "seq": st.seq,
             **{k: v for k, v in msg.items() if k != "type"},
         }
+        # campos com prefixo "_" (ex.: o resultado completo da equity) só vão para a persistência
+        public = {k: v for k, v in full.items() if not k.startswith("_")}
         for q in list(st.subscribers):
-            q.put_nowait(full)
+            q.put_nowait(public)
         if self.on_event is not None:
             try:
                 self.on_event(st.job, full)
@@ -381,7 +388,12 @@ class LaneJobRunner:
         st.pending = None  # progresso pendente é descartado: o `finished` traz os valores finais
         st.status = msg.get("status", "failed")
         self._emit(st, msg)
-        st.finished = {**msg, "job_id": st.job.id, "job_kind": st.job.kind, "seq": st.seq}
+        st.finished = {
+            **{k: v for k, v in msg.items() if not k.startswith("_")},
+            "job_id": st.job.id,
+            "job_kind": st.job.kind,
+            "seq": st.seq,
+        }
         st.deadline = None
         if self._running[st.lane] == st.job.id:
             self._running[st.lane] = None
@@ -438,6 +450,12 @@ class LaneJobRunner:
                 "error": {"code": "worker_sem_resposta", "detail": detail},
             },
         )
+
+
+def _measure_equity_rate() -> float:
+    from gto_engine.warmup import measure_equity_rate
+
+    return measure_equity_rate()
 
 
 def _noop() -> None:

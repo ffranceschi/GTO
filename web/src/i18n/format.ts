@@ -48,3 +48,8 @@ export function formatSeconds(s: number): string {
   const r = Math.round(s - m * 60);
   return `${m} min ${r} s`;
 }
+
+/** Margem de erro (fração) em pontos percentuais: 0.0031 → "±0,31 pp" */
+export function formatMarginPp(fraction: number): string {
+  return `±${formatNumber(fraction * 100, 2)} pp`;
+}

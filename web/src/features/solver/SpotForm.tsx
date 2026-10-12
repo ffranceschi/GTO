@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { api, problemMessage, type Schemas } from "../../api/client";
-import { RangeGrid, type CellData } from "../../components/RangeGrid/RangeGrid";
-import { formatNumber, formatPct } from "../../i18n/format";
+import { useState } from "react";
+import type { Schemas } from "../../api/client";
+import { RangeEditor } from "../../components/RangeEditor/RangeEditor";
 import { t } from "../../i18n/pt-BR";
 import { TreeConfigEditor } from "./TreeConfigEditor";
 import { boardCards, defaultTimeLimit, toSpot, type SpotFormState } from "./types";
@@ -14,62 +13,18 @@ type Props = {
   busy: boolean;
 };
 
-const RANK_ORDER = "AKQJT98765432";
-const SUITS = "shdc";
-
-/** Pesos (1326) → células da grade, só para exibição. */
-function cellsFromWeights(weights: number[]): Record<string, CellData> {
-  const acc: Record<string, { w: number; n: number }> = {};
-  let k = 0;
-  const cards: string[] = [];
-  for (let r = 0; r < 13; r++) for (let s = 0; s < 4; s++) cards.push("23456789TJQKA"[r]! + SUITS[s]!);
-  for (let a = 0; a < 52; a++) {
-    for (let b = a + 1; b < 52; b++) {
-      const w = weights[k++] ?? 0;
-      const [c1, c2] = [cards[a]!, cards[b]!];
-      const hi = RANK_ORDER.indexOf(c1[0]!) < RANK_ORDER.indexOf(c2[0]!) ? c1 : c2;
-      const lo = hi === c1 ? c2 : c1;
-      const hand = hi[0] === lo[0] ? hi[0]! + lo[0]! : hi[0]! + lo[0]! + (hi[1] === lo[1] ? "s" : "o");
-      const e = (acc[hand] ??= { w: 0, n: 0 });
-      e.w += w;
-      e.n += 1;
-    }
-  }
-  const out: Record<string, CellData> = {};
-  for (const [h, { w, n }] of Object.entries(acc)) out[h] = { frequencies: [w > 0 ? 1 : 0], weight: w / n };
-  return out;
-}
-
 function RangeField(props: { label: string; value: string; board: string[]; onChange: (v: string) => void; error?: string }) {
-  const [info, setInfo] = useState<{ combos: number; pct: number; weights: number[] } | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    const id = setTimeout(async () => {
-      const { data, error } = await api.POST("/ranges/parse", {
-        body: { notation: props.value, board: props.board.length <= 5 ? props.board : [] },
-      });
-      if (error) {
-        setErr(problemMessage(error));
-        setInfo(null);
-      } else if (data) {
-        setErr(null);
-        setInfo({ combos: data.combos_after_board, pct: data.pct_of_total, weights: data.weights });
-      }
-    }, 250);
-    return () => clearTimeout(id);
-  }, [props.value, props.board.join(" ")]);
   return (
-    <fieldset className="range-field">
-      <label>
-        {props.label}
-        <textarea value={props.value} onChange={(e) => props.onChange(e.target.value)} rows={3} />
-      </label>
-      {info && <small>{t.spot.combos(formatNumber(info.combos, 1), formatPct(info.pct))}</small>}
-      {(err ?? props.error) && <small className="error">{err ?? props.error}</small>}
-      {info && (
-        <RangeGrid cells={cellsFromWeights(info.weights)} actions={[{ id: "in", kind: "check", label: "No range" }]} size={260} />
-      )}
-    </fieldset>
+    <div className="range-field">
+      <RangeEditor
+        label={props.label}
+        value={props.value}
+        onChange={props.onChange}
+        deadCards={props.board.length <= 5 ? props.board : []}
+        savedRanges
+      />
+      {props.error && <small className="error">{props.error}</small>}
+    </div>
   );
 }
 

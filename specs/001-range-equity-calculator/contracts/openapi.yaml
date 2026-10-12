@@ -1,0 +1,330 @@
+openapi: 3.1.0
+info:
+  title: GTO API — Ranges e equity (feature 001)
+  version: 1.0.0
+  description: >
+    Acréscimos da feature 001 à API da 002 (mesmo servidor, prefixo /api/v1, erros RFC 9457 com
+    `code` estável e `detail` em pt-BR, uso pessoal em localhost). Cálculo de equity é job
+    assíncrono (raia `equity`); progresso pelo WebSocket /jobs/{job_id}/events da 002 com
+    job_kind = "equity" (ver websocket.md). Parse, format e estimativa são cálculos leves (≤ 200 ms).
+servers:
+  - url: /api/v1
+paths:
+  /ranges/parse:
+    post:
+      operationId: parseRange
+      summary: Notação → pesos e contagem de combos com bloqueios (estende a versão da 002 com dead_cards)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RangeParseRequest" }
+      responses:
+        "200":
+          description: Range
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RangeParseResult" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /ranges/format:
+    post:
+      operationId: formatRange
+      summary: Pesos (1326) → notação canônica compacta (grade → texto)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weights]
+              properties:
+                weights: { $ref: "#/components/schemas/Weights" }
+                dead_cards: { $ref: "#/components/schemas/Cards" }
+      responses:
+        "200":
+          description: Notação
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RangeParseResult" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /saved-ranges:
+    get:
+      operationId: listSavedRanges
+      responses:
+        "200":
+          description: Ranges salvos (por nome)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/SavedRange" } }
+    post:
+      operationId: createSavedRange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SavedRangeInput" }
+      responses:
+        "201":
+          description: Salvo (ou sobrescrito com overwrite)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SavedRange" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /saved-ranges/{range_id}:
+    parameters:
+      - { name: range_id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      operationId: updateSavedRange
+      summary: Renomeia e/ou altera o range
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SavedRangeInput" }
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SavedRange" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteSavedRange
+      responses:
+        "204": { description: Excluído }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /equity/estimate:
+    post:
+      operationId: estimateEquity
+      summary: Valida a entrada e estima o custo do cálculo exato (escolhe o método — FR-016)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EquityRequest" }
+      responses:
+        "200":
+          description: Estimativa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquityEstimate" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /equity-jobs:
+    post:
+      operationId: createEquityJob
+      summary: Cria o job de equity (202); a resposta já traz o método escolhido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EquityRequest" }
+      responses:
+        "202":
+          description: Job criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquityJob" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /equity-jobs/{job_id}:
+    parameters:
+      - { name: job_id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      operationId: getEquityJob
+      summary: Estado e, quando concluído, o resultado completo
+      responses:
+        "200":
+          description: Job
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquityJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: cancelEquityJob
+      summary: Cancela (efeito ≤ 1 s); usado também quando as entradas mudam
+      responses:
+        "202": { description: Cancelamento solicitado }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /equity-jobs/{job_id}/stop:
+    parameters:
+      - { name: job_id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      operationId: stopEquityJob
+      summary: Para o Monte Carlo e mantém o resultado parcial como "Estimado" (stop_reason user_stopped)
+      responses:
+        "202": { description: Parada solicitada }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+components:
+  responses:
+    Problem:
+      description: Erro (RFC 9457)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code, detail]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        errors: { type: array, items: { type: object } }
+
+    Cards:
+      type: array
+      maxItems: 15
+      items: { type: string, pattern: "^[AKQJT2-9][shdc]$" }
+
+    Weights:
+      type: array
+      minItems: 1326
+      maxItems: 1326
+      items: { type: number, minimum: 0, maximum: 1 }
+
+    RangeParseRequest:
+      type: object
+      required: [notation]
+      properties:
+        notation: { type: string }
+        board: { $ref: "#/components/schemas/Cards" }
+        dead_cards:
+          $ref: "#/components/schemas/Cards"
+          description: Cartas mortas além do board (mãos específicas dos outros participantes)
+
+    RangeParseResult:
+      type: object
+      required: [canonical, weights, combos, combos_after_board, pct_of_total]
+      properties:
+        canonical: { type: string }
+        weights: { $ref: "#/components/schemas/Weights" }
+        combos: { type: number }
+        combos_after_board: { type: number, description: "Descontando board e dead_cards" }
+        pct_of_total: { type: number, description: "combos_after_board / 1326" }
+
+    SavedRangeInput:
+      type: object
+      required: [name, notation]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        notation: { type: string }
+        overwrite: { type: boolean, default: false }
+
+    SavedRange:
+      type: object
+      required: [id, name, notation, combos, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        notation: { type: string, description: Notação canônica }
+        combos: { type: number }
+        updated_at: { type: string, format: date-time }
+
+    ParticipantInput:
+      oneOf:
+        - type: object
+          required: [notation]
+          properties: { notation: { type: string, example: "22+, A2s+, KTo+" } }
+        - type: object
+          required: [weights]
+          properties: { weights: { $ref: "#/components/schemas/Weights" } }
+
+    EquityRequest:
+      type: object
+      required: [participants]
+      properties:
+        participants:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: "#/components/schemas/ParticipantInput" }
+        board:
+          type: array
+          maxItems: 5
+          items: { type: string, pattern: "^[AKQJT2-9][shdc]$" }
+          description: 0, 3, 4 ou 5 cartas
+        method: { type: string, enum: [auto, exact, monte_carlo], default: auto }
+        target_margin_pp: { type: number, minimum: 0.05, maximum: 1, default: 0.1 }
+        time_limit_s: { type: number, exclusiveMinimum: 0, maximum: 3600, default: 60 }
+        seed: { type: integer, minimum: 0, default: 0 }
+
+    EquityEstimate:
+      type: object
+      required: [method, exact_evaluations, estimated_exact_s]
+      properties:
+        method: { type: string, enum: [exact, monte_carlo] }
+        exact_evaluations: { type: integer }
+        estimated_exact_s: { type: number }
+
+    ComboResult:
+      type: object
+      required: [combo, weight, equity, win, tie, margin, samples]
+      properties:
+        combo: { type: string, example: AhKh }
+        weight: { type: number }
+        equity: { type: number }
+        win: { type: number }
+        tie: { type: number }
+        margin: { type: number, description: "Meia-largura do IC 95% (0 no exato)" }
+        samples: { type: number }
+
+    HandResult:
+      type: object
+      required: [hand, combos, equity, win, tie, margin, samples]
+      properties:
+        hand: { type: string, example: AKs }
+        combos: { type: number }
+        equity: { type: number }
+        win: { type: number }
+        tie: { type: number }
+        margin: { type: number }
+        samples: { type: number }
+
+    ParticipantResult:
+      type: object
+      required: [equity, win, tie, margin, hands, combos]
+      properties:
+        equity: { type: number }
+        win: { type: number }
+        tie: { type: number }
+        margin: { type: number }
+        hands: { type: array, items: { $ref: "#/components/schemas/HandResult" } }
+        combos: { type: array, items: { $ref: "#/components/schemas/ComboResult" } }
+
+    EquityResult:
+      type: object
+      required: [method, stop_reason, samples, seed, elapsed_s, participants]
+      properties:
+        method: { type: string, enum: [exact, monte_carlo] }
+        stop_reason: { type: string, enum: [exact, target_reached, time_limit, user_stopped] }
+        samples: { type: number }
+        seed: { type: integer }
+        elapsed_s: { type: number }
+        participants: { type: array, items: { $ref: "#/components/schemas/ParticipantResult" } }
+
+    EquityJob:
+      type: object
+      required: [id, status, method, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, completed, cancelled, failed] }
+        method: { type: string, enum: [exact, monte_carlo] }
+        estimate: { $ref: "#/components/schemas/EquityEstimate" }
+        result: { oneOf: [{ $ref: "#/components/schemas/EquityResult" }, { type: "null" }] }
+        error: { oneOf: [{ $ref: "#/components/schemas/Problem" }, { type: "null" }] }
+        created_at: { type: string, format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }

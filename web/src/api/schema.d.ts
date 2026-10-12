@@ -11,8 +11,94 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Estado do serviço (pronto só após o warm-up do JIT) */
+        /** Health */
         get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves/{solve_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Export */
+        post: operations["createExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solutions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Solution */
+        post: operations["importSolution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aux-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Aux Job */
+        get: operations["getAuxJob"];
+        put?: never;
+        post?: never;
+        /** Cancel Aux Job */
+        delete: operations["cancelAuxJob"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aux-jobs/{job_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Export */
+        get: operations["downloadExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage */
+        get: operations["getStorageUsage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -30,8 +116,136 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Converte notação em pesos e conta combos (cálculo leve; base para a feature 001) */
+        /** Parse */
         post: operations["parseRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ranges/format": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Format
+         * @description Pesos (1326) → notação canônica compacta (grade → texto, research R8 da 001).
+         */
+        post: operations["formatRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Solves */
+        get: operations["listSolves"];
+        put?: never;
+        /** Create Solve */
+        post: operations["createSolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves/{solve_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Solve */
+        get: operations["getSolve"];
+        put?: never;
+        post?: never;
+        /** Cancel Solve */
+        delete: operations["cancelSolve"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Solve
+         * @description Fixa ou desafixa uma solução (FR-029).
+         */
+        patch: operations["updateSolve"];
+        trace?: never;
+    };
+    "/solves/{solve_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Solve */
+        post: operations["pauseSolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves/{solve_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Solve */
+        post: operations["resumeSolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves/{solve_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Solve */
+        post: operations["stopSolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/solves/{solve_id}/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Node */
+        get: operations["getNode"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -47,7 +261,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Estima nós e memória da árvore para um spot (FR-009) */
+        /** Estimate */
         post: operations["estimateTree"];
         delete?: never;
         options?: never;
@@ -62,9 +276,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Lista configurações de árvore salvas (inclui a padrão) */
+        /** List Configs */
         get: operations["listTreeConfigs"];
         put?: never;
+        /** Create Config */
         post: operations["createTreeConfig"];
         delete?: never;
         options?: never;
@@ -76,152 +291,21 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                config_id: components["parameters"]["ConfigId"];
-            };
+            path?: never;
             cookie?: never;
         };
         get?: never;
-        /** Renomeia ou sobrescreve uma configuração */
+        /** Update Config */
         put: operations["updateTreeConfig"];
         post?: never;
+        /** Delete Config */
         delete: operations["deleteTreeConfig"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/solves": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["listSolves"];
-        put?: never;
-        /** Cria um solve (entra na fila). Reaproveita solução concluída com o mesmo hash, salvo `force`. */
-        post: operations["createSolve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solves/{solve_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        get: operations["getSolve"];
-        put?: never;
-        post?: never;
-        /** Cancela (sem gravar solução) se ativo; remove registro e arquivo se terminado */
-        delete: operations["cancelSolve"];
-        options?: never;
-        head?: never;
-        /** Fixa ou desafixa uma solução (FR-029) */
-        patch: operations["updateSolve"];
-        trace?: never;
-    };
-    "/solves/{solve_id}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["pauseSolve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solves/{solve_id}/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["resumeSolve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solves/{solve_id}/stop": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Para e grava a estratégia atual com explotabilidade exata (FR-015) */
-        post: operations["stopSolve"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solves/{solve_id}/nodes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        /** Visão de um nó (estratégia, ranges, EV e equity por mão e combo) */
-        get: operations["getNode"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solves/{solve_id}/exports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cria um job de exportação (.npz comprimido) na raia aux */
-        post: operations["createExport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/solutions/import": {
+    "/equity/estimate": {
         parameters: {
             query?: never;
             header?: never;
@@ -230,63 +314,97 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Recebe o arquivo (streaming para disco) e cria um job de importação */
-        post: operations["importSolution"];
+        /** Estimate */
+        post: operations["estimateEquity"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/aux-jobs/{job_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        get: operations["getAuxJob"];
-        put?: never;
-        post?: never;
-        delete: operations["cancelAuxJob"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/aux-jobs/{job_id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        /** Download do arquivo de um job de exportação concluído (streaming, sem cálculo) */
-        get: operations["downloadExport"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/storage": {
+    "/equity-jobs": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Uso de disco e política de retenção (FR-030) */
-        get: operations["getStorageUsage"];
+        get?: never;
+        put?: never;
+        /** Create Equity Job */
+        post: operations["createEquityJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equity-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Equity Job */
+        get: operations["getEquityJob"];
         put?: never;
         post?: never;
+        /** Cancel Equity Job */
+        delete: operations["cancelEquityJob"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equity-jobs/{job_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Equity Job */
+        post: operations["stopEquityJob"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/saved-ranges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Ranges */
+        get: operations["listSavedRanges"];
+        put?: never;
+        /** Create Range */
+        post: operations["createSavedRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/saved-ranges/{range_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Range */
+        put: operations["updateSavedRange"];
+        post?: never;
+        /** Delete Range */
+        delete: operations["deleteSavedRange"];
         options?: never;
         head?: never;
         patch?: never;
@@ -296,319 +414,693 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Problem: {
+        /** ActionView */
+        ActionView: {
+            /** Id */
+            id: string;
             /**
-             * Format: uri-reference
-             * @example about:blank
+             * Kind
+             * @enum {string}
              */
-            type: string;
-            title: string;
-            status: number;
-            /**
-             * @description Identificador estável
-             * @example arvore_grande_demais
-             */
-            code: string;
-            /** @description Mensagem em pt-BR */
-            detail: string;
-            errors?: {
-                field?: string;
-                detail?: string;
-            }[];
+            kind: "check" | "bet" | "call" | "raise" | "fold" | "allin";
+            /** Label */
+            label: string;
+            /** Amount Bb */
+            amount_bb: number;
+            /** Pot Fraction */
+            pot_fraction?: number | null;
+            /** Aggregate Frequency */
+            aggregate_frequency: number;
+            /** Combos */
+            combos: number;
         };
+        /** AuxJob */
+        AuxJob: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "export" | "import" | "cleanup";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
+            /** Solve Id */
+            solve_id?: string | null;
+            /** Progress */
+            progress: number;
+            /** Download Url */
+            download_url?: string | null;
+            /** File Expires At */
+            file_expires_at?: string | null;
+            error?: components["schemas"]["Problem"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /** Body_importSolution */
+        Body_importSolution: {
+            /** File */
+            file: string;
+        };
+        /** ComboResult */
+        ComboResult: {
+            /** Combo */
+            combo: string;
+            /** Weight */
+            weight: number;
+            /** Equity */
+            equity: number;
+            /** Win */
+            win: number;
+            /** Tie */
+            tie: number;
+            /** Margin */
+            margin: number;
+            /** Samples */
+            samples: number;
+        };
+        /** ComboView */
+        ComboView: {
+            /** Combo */
+            combo: string;
+            /** Reach Weight */
+            reach_weight: number;
+            /** Frequencies */
+            frequencies: {
+                [key: string]: number;
+            };
+            /** Ev Bb */
+            ev_bb: number;
+            /** Equity */
+            equity: number;
+        };
+        /** EquityEstimate */
+        EquityEstimate: {
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "exact" | "monte_carlo";
+            /** Exact Evaluations */
+            exact_evaluations: number;
+            /** Estimated Exact S */
+            estimated_exact_s: number;
+        };
+        /** EquityJob */
+        EquityJob: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "cancelled" | "failed";
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "exact" | "monte_carlo";
+            estimate?: components["schemas"]["EquityEstimate"] | null;
+            result?: components["schemas"]["EquityResult"] | null;
+            error?: components["schemas"]["Problem"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /** EquityRequest */
+        EquityRequest: {
+            /** Participants */
+            participants: (components["schemas"]["NotationRange"] | components["schemas"]["WeightsRange"])[];
+            /**
+             * Board
+             * @default []
+             */
+            board?: string[];
+            /**
+             * Method
+             * @default auto
+             * @enum {string}
+             */
+            method?: "auto" | "exact" | "monte_carlo";
+            /**
+             * Target Margin Pp
+             * @default 0.1
+             */
+            target_margin_pp?: number;
+            /**
+             * Time Limit S
+             * @default 60
+             */
+            time_limit_s?: number;
+            /**
+             * Seed
+             * @default 0
+             */
+            seed?: number;
+        };
+        /** EquityResult */
+        EquityResult: {
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "exact" | "monte_carlo";
+            /**
+             * Stop Reason
+             * @enum {string}
+             */
+            stop_reason: "exact" | "target_reached" | "time_limit" | "user_stopped";
+            /** Samples */
+            samples: number;
+            /** Seed */
+            seed: number;
+            /** Elapsed S */
+            elapsed_s: number;
+            /** Participants */
+            participants: components["schemas"]["ParticipantResult"][];
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HandResult */
+        HandResult: {
+            /** Hand */
+            hand: string;
+            /** Combos */
+            combos: number;
+            /** Equity */
+            equity: number;
+            /** Win */
+            win: number;
+            /** Tie */
+            tie: number;
+            /** Margin */
+            margin: number;
+            /** Samples */
+            samples: number;
+        };
+        /** HandView */
+        HandView: {
+            /** Hand */
+            hand: string;
+            /** Combos */
+            combos: number;
+            /** Frequencies */
+            frequencies: {
+                [key: string]: number;
+            };
+            /** Ev Bb */
+            ev_bb: number;
+            /** Equity */
+            equity: number;
+        };
+        /** Health */
         Health: {
-            /** @enum {string} */
+            /**
+             * Status
+             * @enum {string}
+             */
             status: "ready" | "warming_up";
+            /** Engine Version */
             engine_version: string;
         };
-        /** @enum {string} */
-        Street: "flop" | "turn" | "river";
-        /** @enum {string} */
-        Position: "oop" | "ip";
-        /** @description Range da feature 001 — notação textual OU vetor de 1326 pesos */
-        RangeInput: {
-            /** @example 22+, A2s+, KTo+, KQo:0.5 */
-            notation: string;
-        } | {
-            weights: number[];
-        };
-        RangeParseRequest: {
-            notation: string;
-            board?: string[];
-        };
-        RangeParseResult: {
-            canonical: string;
-            weights: number[];
-            combos: number;
-            combos_after_board: number;
-            /** @description combos_after_board / 1326 */
-            pct_of_total: number;
-        };
-        Spot: {
-            oop_range: components["schemas"]["RangeInput"];
-            ip_range: components["schemas"]["RangeInput"];
-            /**
-             * @example [
-             *       "Ks",
-             *       "7d",
-             *       "2c",
-             *       "Jh",
-             *       "3s"
-             *     ]
-             */
-            board: string[];
-            pot: number;
-            effective_stack: number;
-        };
-        SizesByPosition: {
-            oop?: number[];
-            ip?: number[];
-        };
-        TreeConfig: {
-            /**
-             * @description Frações do pote por street e posição
-             * @example {
-             *       "river": {
-             *         "oop": [
-             *           0.33,
-             *           0.75
-             *         ],
-             *         "ip": [
-             *           0.33,
-             *           0.75
-             *         ]
-             *       }
-             *     }
-             */
-            bet_sizes: {
-                [key: string]: components["schemas"]["SizesByPosition"];
-            };
-            /** @description Frações do pote após o call */
-            raise_sizes: {
-                [key: string]: components["schemas"]["SizesByPosition"];
-            };
-            /** @default 3 */
-            max_raises_per_street: number;
-            /** @default 0.67 */
-            allin_threshold: number;
-            /** @default false */
-            add_allin_action: boolean;
-            /** @default false */
-            allow_donk: boolean;
-        };
-        NamedTreeConfigInput: {
+        /** NamedTreeConfig */
+        NamedTreeConfig: {
+            /** Name */
             name: string;
             config: components["schemas"]["TreeConfig"];
-            /** @default false */
-            overwrite: boolean;
-        };
-        NamedTreeConfig: components["schemas"]["NamedTreeConfigInput"] & {
-            /** Format: uuid */
+            /**
+             * Overwrite
+             * @default false
+             */
+            overwrite?: boolean;
+            /** Id */
             id: string;
+            /** Is Default */
             is_default: boolean;
-            /** Format: date-time */
+            /**
+             * Updated At
+             * Format: date-time
+             */
             updated_at: string;
         };
+        /** NamedTreeConfigInput */
+        NamedTreeConfigInput: {
+            /** Name */
+            name: string;
+            config: components["schemas"]["TreeConfig"];
+            /**
+             * Overwrite
+             * @default false
+             */
+            overwrite?: boolean;
+        };
+        /** NodeView */
+        NodeView: {
+            /** Path */
+            path: string[];
+            /**
+             * Breadcrumb
+             * @default []
+             */
+            breadcrumb?: string[];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "decision" | "chance" | "terminal";
+            /** Player */
+            player?: ("oop" | "ip") | null;
+            /** Pot */
+            pot: number;
+            /** Stacks */
+            stacks: {
+                [key: string]: number;
+            };
+            /**
+             * Actions
+             * @default []
+             */
+            actions?: components["schemas"]["ActionView"][];
+            /**
+             * Hands
+             * @default []
+             */
+            hands?: components["schemas"]["HandView"][];
+            /**
+             * Combos
+             * @default []
+             */
+            combos?: components["schemas"]["ComboView"][];
+            /** Ranges */
+            ranges: components["schemas"]["RangeAtNode"][];
+            /**
+             * Next Cards
+             * @default []
+             */
+            next_cards?: string[];
+            terminal?: components["schemas"]["Terminal"] | null;
+            solution?: components["schemas"]["SolutionSummary"] | null;
+        };
+        /** NotationRange */
+        NotationRange: {
+            /** Notation */
+            notation: string;
+        };
+        /** ParticipantResult */
+        ParticipantResult: {
+            /** Equity */
+            equity: number;
+            /** Win */
+            win: number;
+            /** Tie */
+            tie: number;
+            /** Margin */
+            margin: number;
+            /** Hands */
+            hands: components["schemas"]["HandResult"][];
+            /** Combos */
+            combos: components["schemas"]["ComboResult"][];
+        };
+        /** PinRequest */
+        PinRequest: {
+            /** Pinned */
+            pinned: boolean;
+        };
+        /** Problem */
+        Problem: {
+            /**
+             * Type
+             * @default about:blank
+             */
+            type?: string;
+            /** Title */
+            title: string;
+            /** Status */
+            status: number;
+            /** Code */
+            code: string;
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors?: {
+                [key: string]: string;
+            }[] | null;
+        };
+        /** RangeAtNode */
+        RangeAtNode: {
+            /**
+             * Player
+             * @enum {string}
+             */
+            player: "oop" | "ip";
+            /** Combos */
+            combos: number;
+            /** Weights */
+            weights: number[];
+        };
+        /** RangeFormatRequest */
+        RangeFormatRequest: {
+            /** Weights */
+            weights: number[];
+            /**
+             * Dead Cards
+             * @description Cartas mortas além do board (mãos específicas dos outros participantes)
+             * @default []
+             */
+            dead_cards?: string[];
+        };
+        /** RangeParseRequest */
+        RangeParseRequest: {
+            /** Notation */
+            notation: string;
+            /**
+             * Board
+             * @default []
+             */
+            board?: string[];
+            /**
+             * Dead Cards
+             * @description Cartas mortas além do board (mãos específicas dos outros participantes)
+             * @default []
+             */
+            dead_cards?: string[];
+        };
+        /** RangeParseResult */
+        RangeParseResult: {
+            /** Canonical */
+            canonical: string;
+            /** Weights */
+            weights: number[];
+            /** Combos */
+            combos: number;
+            /** Combos After Board */
+            combos_after_board: number;
+            /** Pct Of Total */
+            pct_of_total: number;
+        };
+        /** SavedRange */
+        SavedRange: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Notation
+             * @description Notação canônica
+             */
+            notation: string;
+            /** Combos */
+            combos: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SavedRangeInput */
+        SavedRangeInput: {
+            /** Name */
+            name: string;
+            /** Notation */
+            notation: string;
+            /**
+             * Overwrite
+             * @default false
+             */
+            overwrite?: boolean;
+        };
+        /** SizesByPosition */
+        SizesByPosition: {
+            /**
+             * Oop
+             * @default []
+             */
+            oop?: number[];
+            /**
+             * Ip
+             * @default []
+             */
+            ip?: number[];
+        };
+        /** SolutionSummary */
+        SolutionSummary: {
+            /** Exploitability Pct */
+            exploitability_pct: number | null;
+            /** Iterations */
+            iterations: number;
+            /** Stop Reason */
+            stop_reason: string | null;
+        };
+        /** Solve */
+        Solve: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "paused" | "stopping" | "finalizing" | "completed" | "stopped" | "cancelled" | "failed" | "expired";
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "solve" | "import";
+            /** Input Hash */
+            input_hash: string;
+            /** Spot */
+            spot?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tree */
+            tree?: {
+                [key: string]: unknown;
+            } | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /** Estimated Bytes */
+            estimated_bytes?: number | null;
+            /** Iterations */
+            iterations: number;
+            /** Exploitability Pct */
+            exploitability_pct?: number | null;
+            /** Stop Reason */
+            stop_reason?: ("target_reached" | "time_limit" | "user_stopped") | null;
+            /** Queue Position */
+            queue_position?: number | null;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned?: boolean;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            error?: components["schemas"]["Problem"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+        };
+        /** SolveParams */
+        SolveParams: {
+            /**
+             * Algorithm
+             * @default dcfr
+             * @enum {string}
+             */
+            algorithm?: "dcfr" | "cfr_plus" | "linear_cfr";
+            /**
+             * Target Exploitability Pct
+             * @default 0.5
+             */
+            target_exploitability_pct?: number;
+            /**
+             * Time Limit S
+             * @description Se omitido: river 60, turn 120, flop 900 (por street do board)
+             */
+            time_limit_s?: number | null;
+            /** Max Iterations */
+            max_iterations?: number | null;
+            /**
+             * Seed
+             * @default 0
+             */
+            seed?: number;
+        };
+        /** SolveRequest */
+        SolveRequest: {
+            spot: components["schemas"]["Spot"];
+            tree: components["schemas"]["TreeConfig"];
+            /**
+             * @default {
+             *       "algorithm": "dcfr",
+             *       "target_exploitability_pct": 0.5,
+             *       "seed": 0
+             *     }
+             */
+            params?: components["schemas"]["SolveParams"];
+            /**
+             * Force
+             * @description Resolver mesmo se houver solução com o mesmo hash
+             * @default false
+             */
+            force?: boolean;
+        };
+        /** Spot */
+        Spot: {
+            /** Oop Range */
+            oop_range: components["schemas"]["NotationRange"] | components["schemas"]["WeightsRange"];
+            /** Ip Range */
+            ip_range: components["schemas"]["NotationRange"] | components["schemas"]["WeightsRange"];
+            /** Board */
+            board: string[];
+            /** Pot */
+            pot: number;
+            /** Effective Stack */
+            effective_stack: number;
+        };
+        /** SpotWithTree */
         SpotWithTree: {
             spot: components["schemas"]["Spot"];
             tree: components["schemas"]["TreeConfig"];
         };
-        TreeEstimate: {
-            decision_nodes: number;
-            chance_nodes: number;
-            terminal_nodes: number;
-            /** @description Pico de memória estimado do solve */
-            estimated_bytes: number;
-            /** @description Tamanho estimado da solução em disco */
-            estimated_solution_bytes: number;
-            max_bytes: number;
-            within_limit: boolean;
-            /** @description Redução obtida pelo isomorfismo de naipes (≥ 1) */
-            isomorphism_factor: number;
-            /** @description Sugestões em pt-BR para reduzir a árvore quando within_limit = false */
-            suggestions?: string[];
-        };
-        SolveParams: {
-            /**
-             * @default dcfr
-             * @enum {string}
-             */
-            algorithm: "dcfr" | "cfr_plus" | "linear_cfr";
-            /** @default 0.5 */
-            target_exploitability_pct: number;
-            /** @description Se omitido: river 60, turn 120, flop 900 (por street do board) */
-            time_limit_s?: number;
-            max_iterations?: number | null;
-            /** @default 0 */
-            seed: number;
-        };
-        SolveRequest: components["schemas"]["SpotWithTree"] & {
-            params?: components["schemas"]["SolveParams"];
-            /**
-             * @description Resolver mesmo se houver solução com o mesmo hash
-             * @default false
-             */
-            force: boolean;
-        };
-        /** @enum {string} */
-        SolveStatus: "queued" | "running" | "paused" | "stopping" | "finalizing" | "completed" | "stopped" | "cancelled" | "failed" | "expired";
-        Solve: {
-            /** Format: uuid */
-            id: string;
-            status: components["schemas"]["SolveStatus"];
-            /** @enum {string} */
-            origin: "solve" | "import";
-            input_hash: string;
-            spot?: components["schemas"]["Spot"];
-            tree?: components["schemas"]["TreeConfig"];
-            params?: components["schemas"]["SolveParams"];
-            estimated_bytes?: number;
-            iterations: number;
-            exploitability_pct?: number | null;
-            /** @enum {string|null} */
-            stop_reason?: "target_reached" | "time_limit" | "user_stopped" | null;
-            /** @description Posição na fila (1 = próximo); null se não está na fila */
-            queue_position?: number | null;
-            pinned: boolean;
-            size_bytes?: number | null;
-            /** Format: date-time */
-            last_used_at?: string | null;
-            /**
-             * Format: date-time
-             * @description null se fixada ou sem solução
-             */
-            expires_at?: string | null;
-            error?: components["schemas"]["Problem"] | null;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            started_at?: string | null;
-            /** Format: date-time */
-            finished_at?: string | null;
-        };
-        AuxJob: {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            kind: "export" | "import" | "cleanup";
-            /** @enum {string} */
-            status: "queued" | "running" | "completed" | "failed" | "cancelled";
-            /** Format: uuid */
-            solve_id?: string | null;
-            progress: number;
-            /** @description Export concluído: /api/v1/aux-jobs/{id}/file */
-            download_url?: string | null;
-            /** Format: date-time */
-            file_expires_at?: string | null;
-            error?: components["schemas"]["Problem"] | null;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            finished_at?: string | null;
-        };
+        /** StorageUsage */
         StorageUsage: {
+            /** Total Bytes */
             total_bytes: number;
+            /** Solutions */
             solutions: number;
+            /** Pinned */
             pinned: number;
-            /** @example 30 */
+            /** Retention Days */
             retention_days: number;
-            /** @description Soluções a 7 dias ou menos da exclusão automática */
+            /** Expiring Soon */
             expiring_soon: number;
         };
-        ActionView: {
-            /** @example b75 */
-            id: string;
-            /** @enum {string} */
-            kind: "check" | "bet" | "call" | "raise" | "fold" | "allin";
-            /** @example Bet 75% (7,5 bb) */
-            label: string;
-            amount_bb: number;
-            pot_fraction?: number | null;
-            aggregate_frequency: number;
-            /** @description Combos ponderados que escolhem a ação */
-            combos: number;
+        /** Terminal */
+        Terminal: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fold" | "showdown";
+            /**
+             * Results
+             * @default []
+             */
+            results?: components["schemas"]["TerminalResult"][];
         };
-        HandView: {
-            /** @example AKs */
-            hand: string;
-            combos: number;
-            frequencies: {
-                [key: string]: number;
+        /** TerminalResult */
+        TerminalResult: {
+            /**
+             * Player
+             * @enum {string}
+             */
+            player: "oop" | "ip";
+            /** Combos */
+            combos: components["schemas"]["ComboView"][];
+        };
+        /** TreeConfig */
+        TreeConfig: {
+            /** Bet Sizes */
+            bet_sizes: {
+                [key: string]: components["schemas"]["SizesByPosition"];
             };
-            ev_bb: number;
-            equity: number;
-        };
-        ComboView: {
-            /** @example AhKh */
-            combo: string;
-            reach_weight: number;
-            frequencies: {
-                [key: string]: number;
+            /** Raise Sizes */
+            raise_sizes: {
+                [key: string]: components["schemas"]["SizesByPosition"];
             };
-            ev_bb: number;
-            equity: number;
+            /**
+             * Max Raises Per Street
+             * @default 3
+             */
+            max_raises_per_street?: number;
+            /**
+             * Allin Threshold
+             * @default 0.67
+             */
+            allin_threshold?: number;
+            /**
+             * Add Allin Action
+             * @default false
+             */
+            add_allin_action?: boolean;
+            /**
+             * Allow Donk
+             * @default false
+             */
+            allow_donk?: boolean;
         };
-        RangeAtNode: {
-            player: components["schemas"]["Position"];
-            combos: number;
+        /** TreeEstimate */
+        TreeEstimate: {
+            /** Decision Nodes */
+            decision_nodes: number;
+            /** Chance Nodes */
+            chance_nodes: number;
+            /** Terminal Nodes */
+            terminal_nodes: number;
+            /** Estimated Bytes */
+            estimated_bytes: number;
+            /** Estimated Solution Bytes */
+            estimated_solution_bytes: number;
+            /** Max Bytes */
+            max_bytes: number;
+            /** Within Limit */
+            within_limit: boolean;
+            /** Isomorphism Factor */
+            isomorphism_factor: number;
+            /**
+             * Suggestions
+             * @default []
+             */
+            suggestions?: string[];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+        /** WeightsRange */
+        WeightsRange: {
+            /** Weights */
             weights: number[];
         };
-        NodeView: {
-            path: string[];
-            /**
-             * @example [
-             *       "Check",
-             *       "Bet 75% (7,5 bb)"
-             *     ]
-             */
-            breadcrumb?: string[];
-            /** @enum {string} */
-            kind: "decision" | "chance" | "terminal";
-            player?: components["schemas"]["Position"] | null;
-            pot: number;
-            stacks: {
-                oop?: number;
-                ip?: number;
-            };
-            actions?: components["schemas"]["ActionView"][];
-            hands?: components["schemas"]["HandView"][];
-            combos?: components["schemas"]["ComboView"][];
-            ranges: components["schemas"]["RangeAtNode"][];
-            /** @description Cartas possíveis em nós de chance (bloqueadas omitidas) */
-            next_cards?: string[];
-            terminal?: {
-                /** @enum {string} */
-                kind?: "fold" | "showdown";
-                /** @description Resultado esperado (EV em bb e equity) de cada combo dos dois jogadores */
-                results?: {
-                    player?: components["schemas"]["Position"];
-                    combos?: components["schemas"]["ComboView"][];
-                }[];
-            } | null;
-            /** @description Cabeçalho da solução exibido em todos os nós (Princípio II) */
-            solution?: {
-                exploitability_pct?: number | null;
-                iterations?: number;
-                stop_reason?: string | null;
-            } | null;
-        };
     };
-    responses: {
-        /** @description Erro */
-        Problem: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["Problem"];
-            };
-        };
-    };
-    parameters: {
-        SolveId: string;
-        JobId: string;
-        ConfigId: string;
-    };
+    responses: never;
+    parameters: never;
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -624,7 +1116,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Pronto */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -644,6 +1136,363 @@ export interface operations {
             };
         };
     };
+    createExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                solve_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuxJob"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    importSolution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_importSolution"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuxJob"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getAuxJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuxJob"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancelAuxJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    downloadExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getStorageUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageUsage"];
+                };
+            };
+        };
+    };
     parseRange: {
         parameters: {
             query?: never;
@@ -657,7 +1506,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Range */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -666,10 +1515,18 @@ export interface operations {
                     "application/json": components["schemas"]["RangeParseResult"];
                 };
             };
-            422: components["responses"]["Problem"];
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
-    estimateTree: {
+    formatRange: {
         parameters: {
             query?: never;
             header?: never;
@@ -678,121 +1535,34 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SpotWithTree"];
+                "application/json": components["schemas"]["RangeFormatRequest"];
             };
         };
         responses: {
-            /** @description Estimativa */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TreeEstimate"];
+                    "application/json": components["schemas"]["RangeParseResult"];
                 };
             };
-            422: components["responses"]["Problem"];
-        };
-    };
-    listTreeConfigs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Lista */
-            200: {
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NamedTreeConfig"][];
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
-        };
-    };
-    createTreeConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NamedTreeConfigInput"];
-            };
-        };
-        responses: {
-            /** @description Criada */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NamedTreeConfig"];
-                };
-            };
-            409: components["responses"]["Problem"];
-            422: components["responses"]["Problem"];
-        };
-    };
-    updateTreeConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                config_id: components["parameters"]["ConfigId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NamedTreeConfigInput"];
-            };
-        };
-        responses: {
-            /** @description Atualizada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NamedTreeConfig"];
-                };
-            };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-        };
-    };
-    deleteTreeConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                config_id: components["parameters"]["ConfigId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Excluída */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            404: components["responses"]["Problem"];
         };
     };
     listSolves: {
         parameters: {
             query?: {
-                status?: components["schemas"]["SolveStatus"];
+                status?: ("queued" | "running" | "paused" | "stopping" | "finalizing" | "completed" | "stopped" | "cancelled" | "failed" | "expired") | null;
             };
             header?: never;
             path?: never;
@@ -800,13 +1570,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Lista (mais recentes primeiro) */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Solve"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -833,7 +1612,7 @@ export interface operations {
                     "application/json": components["schemas"]["Solve"];
                 };
             };
-            /** @description Aceito (novo ou em fila) */
+            /** @description Successful Response */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -842,13 +1621,13 @@ export interface operations {
                     "application/json": components["schemas"]["Solve"];
                 };
             };
-            /** @description Entradas inválidas ou `arvore_grande_demais` */
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["Problem"];
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
         };
@@ -858,13 +1637,13 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Solve */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -873,7 +1652,24 @@ export interface operations {
                     "application/json": components["schemas"]["Solve"];
                 };
             };
-            404: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     cancelSolve: {
@@ -881,7 +1677,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
@@ -894,14 +1690,31 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Removido */
+            /** @description Successful Response */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            404: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     updateSolve: {
@@ -909,19 +1722,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": {
-                    pinned: boolean;
-                };
+                "application/json": components["schemas"]["PinRequest"];
             };
         };
         responses: {
-            /** @description Atualizado */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -930,8 +1741,33 @@ export interface operations {
                     "application/json": components["schemas"]["Solve"];
                 };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     pauseSolve: {
@@ -939,21 +1775,48 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Pausa solicitada (idempotente) */
+            /** @description Successful Response */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     resumeSolve: {
@@ -961,21 +1824,48 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Retomada solicitada (idempotente) */
+            /** @description Successful Response */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     stopSolve: {
@@ -983,38 +1873,64 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Parada solicitada (idempotente) */
+            /** @description Successful Response */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     getNode: {
         parameters: {
             query?: {
-                /** @description Caminho de ids separados por "/"; vazio = raiz. Exemplo: "x/b75/c/Kh" */
                 path?: string;
             };
             header?: never;
             path: {
-                solve_id: components["parameters"]["SolveId"];
+                solve_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Nó */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1023,44 +1939,36 @@ export interface operations {
                     "application/json": components["schemas"]["NodeView"];
                 };
             };
-            404: components["responses"]["Problem"];
-            /** @description Solve sem solução disponível (`solucao_indisponivel`) */
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["Problem"];
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
-            422: components["responses"]["Problem"];
-        };
-    };
-    createExport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                solve_id: components["parameters"]["SolveId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job criado */
-            202: {
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuxJob"];
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
         };
     };
-    importSolution: {
+    estimateTree: {
         parameters: {
             query?: never;
             header?: never;
@@ -1069,95 +1977,31 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    file: string;
-                };
+                "application/json": components["schemas"]["SpotWithTree"];
             };
         };
         responses: {
-            /** @description Job de importação criado; ao concluir, `solve_id` aponta para a solução importada */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuxJob"];
-                };
-            };
-            413: components["responses"]["Problem"];
-        };
-    };
-    getAuxJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuxJob"];
+                    "application/json": components["schemas"]["TreeEstimate"];
                 };
             };
-            404: components["responses"]["Problem"];
-        };
-    };
-    cancelAuxJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cancelamento solicitado */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            404: components["responses"]["Problem"];
-        };
-    };
-    downloadExport: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Arquivo de solução (.npz) */
-            200: {
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/octet-stream": string;
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
-            404: components["responses"]["Problem"];
-            409: components["responses"]["Problem"];
-            410: components["responses"]["Problem"];
         };
     };
-    getStorageUsage: {
+    listTreeConfigs: {
         parameters: {
             query?: never;
             header?: never;
@@ -1166,13 +2010,539 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Uso */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StorageUsage"];
+                    "application/json": components["schemas"]["NamedTreeConfig"][];
+                };
+            };
+        };
+    };
+    createTreeConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamedTreeConfigInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NamedTreeConfig"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateTreeConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamedTreeConfigInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NamedTreeConfig"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteTreeConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                config_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    estimateEquity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityEstimate"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createEquityJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityJob"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getEquityJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquityJob"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancelEquityJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stopEquityJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listSavedRanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedRange"][];
+                };
+            };
+        };
+    };
+    createSavedRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedRangeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedRange"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateSavedRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                range_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedRangeInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedRange"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteSavedRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                range_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Problem"];
                 };
             };
         };

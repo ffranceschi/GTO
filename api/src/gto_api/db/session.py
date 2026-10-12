@@ -8,7 +8,14 @@ from contextlib import contextmanager
 from sqlalchemy import Engine, create_engine, event, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from gto_api.db.models import ACTIVE_SOLVE_STATUSES, AuxJobRow, Base, SolveRow, now_utc
+from gto_api.db.models import (
+    ACTIVE_SOLVE_STATUSES,
+    AuxJobRow,
+    Base,
+    EquityJobRow,
+    SolveRow,
+    now_utc,
+)
 
 
 class Database:
@@ -63,4 +70,14 @@ class Database:
                     finished_at=now_utc(),
                 )
             )
-            return int(r1.rowcount or 0) + int(r2.rowcount or 0)  # type: ignore[attr-defined]
+            r3 = s.execute(
+                update(EquityJobRow)
+                .where(EquityJobRow.status.in_(("queued", "running")))
+                .values(
+                    status="failed",
+                    error_code="servidor_reiniciado",
+                    error_detail=detail,
+                    finished_at=now_utc(),
+                )
+            )
+            return int(r1.rowcount or 0) + int(r2.rowcount or 0) + int(r3.rowcount or 0)  # type: ignore[attr-defined]

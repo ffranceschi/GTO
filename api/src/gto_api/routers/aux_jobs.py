@@ -8,9 +8,9 @@ from typing import Any
 
 from fastapi import APIRouter, Request, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
-from gto_api.db.models import AuxJobRow, SolveRow, new_id, now_utc
+from gto_api.db.models import AuxJobRow, EquityJobRow, SolveRow, new_id, now_utc
 from gto_api.errors import ApiError, fmt_num, not_found
 from gto_api.jobs.runner import Job, JobStateError, UnknownJobError
 from gto_api.schemas.aux import AuxJob, StorageUsage
@@ -243,6 +243,13 @@ async def schedule_cleanup(app: Any) -> str:
             )
             if _aware(r.finished_at) is not None and now - _aware(r.finished_at) > EXPORT_TTL  # type: ignore[operator]
         ]
+        # resultados de equity com mais de 24 h (recalculáveis — research R9 da 001)
+        s.execute(
+            delete(EquityJobRow).where(
+                EquityJobRow.status.in_(("completed", "cancelled", "failed")),
+                EquityJobRow.finished_at < now - EXPORT_TTL,
+            )
+        )
         row = AuxJobRow(id=new_id(), kind="cleanup", status="queued", progress=0.0)
         s.add(row)
         job_id = row.id

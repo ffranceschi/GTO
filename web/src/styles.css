@@ -41,3 +41,22 @@ tr.out { color: #999; }
 table.solutions { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
 table.solutions td, table.solutions th { padding: 4px 8px; border-bottom: 1px solid #eee; text-align: left; }
 table.solutions tr.soon td { background: #fff4d6; }
+select { font: inherit; padding: 4px 6px; width: 100%; }
+.participant button { margin-top: 2px; }
+.equity-result .equity-value { font-weight: 600; }
+.range-editor { border: none; padding: 0; margin: 0; }
+.participant { flex: 1 1 560px; border-top: 1px solid #eee; padding-top: 6px; }
+.editor-tools { display: flex; gap: 8px; align-items: flex-end; }
+.editor-tools .active-weight { flex: 0 0 140px; margin: 0; }
+.cell-detail { flex: 1 1 180px; font-size: 0.85rem; }
+.cell-detail table { border-collapse: collapse; }
+.cell-detail td { padding: 2px 8px; border-bottom: 1px solid #eee; }
+.cell-detail input { width: 64px; }
+.distribution { margin-top: 12px; }
+.distribution .table-scroll { max-height: 420px; overflow: auto; }
+tr.high-margin td { background: #fff0e0; }
+tr.high-margin td:first-child::after { content: " ⚠"; color: #b05a00; }
+button.link { background: none; border: none; padding: 0; margin: 0; font: inherit; font-weight: 700; color: #1f5fbf; }
+.equity-legend { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; }
+.equity-legend .bar { display: inline-block; width: 160px; height: 10px; border-radius: 2px; }
+button[aria-pressed="true"] { font-weight: 700; border-bottom: 2px solid #1f5fbf; }

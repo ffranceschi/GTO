@@ -24,3 +24,12 @@ O motor mede utilidades como "fichas recebidas do pote menos fichas investidas n
 pote inicial `P` (antes) como dinheiro morto; logo `u₁ + u₂ = P`. O valor do jogo usual (lucro
 líquido) é `u − P/2` quando os antes são iguais. Explotabilidade: `(BR₁ + BR₂ − P) / 2`, em % de
 `P` (research R6).
+
+## Equity (feature 001, research R10)
+
+| Caso | Valor | Fonte | Tolerância | Teste |
+|------|-------|-------|------------|-------|
+| AA vs KK pré-flop (todos os combos) | 81,95% / 18,05% | enumeração exata, conferida pelo oráculo independente `phevaluator` (força bruta) | ±0,1 pp (SC-001) | `test_equity_reference.py` |
+| Mão vs mão e mão vs range em todas as streets (~20 confrontos) | força bruta com `phevaluator` | oráculo independente | ±1e-9 | `test_equity_reference.py` |
+| Equity por combo (range vs range e multiway pequeno) | força bruta com `phevaluator` | oráculo independente | ±1e-9 | `test_equity_reference.py` |
+| Contagens de combos (`22+, A2s+, KTo+` = 162; `AA` com um ás morto = 3) | combinatória | — | exato | `unit/test_range_notation.py`, `api/.../test_ranges_api.py` |

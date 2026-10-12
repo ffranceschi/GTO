@@ -110,3 +110,40 @@ class AuxJobRow(Base):
     error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+EQUITY_STATUSES = ("queued", "running", "completed", "cancelled", "failed")
+
+
+class SavedRangeRow(Base):
+    """Range salvo com nome (feature 001, FR-025/026)."""
+
+    __tablename__ = "saved_ranges"
+    __table_args__ = (CheckConstraint("length(name) BETWEEN 1 AND 60", name="ck_saved_range_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(60), unique=True)
+    notation: Mapped[str] = mapped_column(Text)
+    combos: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now_utc, onupdate=now_utc
+    )
+
+
+class EquityJobRow(Base):
+    """Job de equity (feature 001); resultado guardado por 24 h (research R9)."""
+
+    __tablename__ = "equity_jobs"
+    __table_args__ = (CheckConstraint(f"status IN {EQUITY_STATUSES!r}", name="ck_equity_status"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    request_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    estimate_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

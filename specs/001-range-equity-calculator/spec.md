@@ -8,6 +8,24 @@
 
 **Input**: User description: "Quero uma ferramenta onde o jogador monta ranges de mãos e calcula equity entre elas. Editor de range em grade 13x13 (pares na diagonal, suited acima e offsuit abaixo), com clique, arrasto, peso parcial por combo e notação textual com conversão nos dois sentidos. Mostrar combos e % do total (1326), descontando bloqueios do board e de mãos conhecidas. Calcular equity de 2 a 6 ranges ou mãos em qualquer street, com board parcial ou completo; enumeração exata quando viável e Monte Carlo com margem de erro quando não. Exibir equity, win/tie e distribuição de equity por mão. Salvar e carregar ranges nomeados. Critérios: AA vs KK ≈ 81,9% / 18,1%; range vs range heads-up no flop em menos de 2 s."
 
+## Clarifications
+
+### Session 2026-10-12
+
+- Q: Onde os ranges salvos com nome devem ficar armazenados? → A: No servidor local (SQLite), via
+  API, como as configurações de árvore da 002; disponíveis na calculadora e no solver.
+- Q: Qual margem de erro o Monte Carlo deve atingir antes de parar sozinho? → A: Padrão ±0,1 pp
+  (IC de 95%), configurável entre ±0,05 e ±1 pp; tempo-limite padrão de 60 s.
+- Q: O que acontece ao mudar ranges ou board com um cálculo em andamento? → A: O job em andamento é
+  cancelado na hora; a tela avisa "Entradas alteradas" e o novo cálculo só começa ao clicar em
+  "Calcular".
+- Q: A distribuição de equity por mão/combo existe em multiway e em Monte Carlo? → A: Sempre (2 a
+  6 participantes, exato ou Monte Carlo); no Monte Carlo cada mão e combo mostra a própria margem
+  de erro e o nº de amostras, com destaque quando a margem passa de ±2 pp.
+- Q: Qual critério escolhe entre enumeração exata e Monte Carlo? → A: Exato quando o tempo
+  estimado (combinações × custo medido) for ≤ 2 s no hardware de referência; senão Monte Carlo; o
+  jogador pode forçar "exato" ou "Monte Carlo".
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Calcular equity entre mãos e ranges digitados (Priority: P1)
@@ -97,6 +115,9 @@ range tem sua equity listada e que a média ponderada pelos combos é igual à e
    **Then** cada célula é colorida conforme sua equity média.
 3. **Given** a distribuição exibida, **Then** a média das equities por mão, ponderada pelos combos
    e pesos, coincide com a equity total do participante (± 0,05 pp em cálculo exato).
+5. **Given** um cálculo multiway por Monte Carlo, **When** o jogador abre a distribuição, **Then**
+   cada mão e combo mostra a própria margem de erro e o número de amostras, e os que têm margem
+   acima de ±2 pp aparecem destacados.
 4. **Given** a distribuição exibida, **Then** há um gráfico de equity (combos do range ordenados
    por equity) mostrando que fração do range tem pelo menos X% de equity.
 
@@ -137,7 +158,8 @@ e conferir que grade, texto e contagem são idênticos.
   cálculo é bloqueado.
 - **Board com quantidade inválida** de cartas (1, 2 ou mais de 5) ou carta repetida no board:
   entrada rejeitada.
-- **Board completo (river)**: o resultado é sempre exato, sem enumeração de cartas futuras.
+- **Board completo (river)**: não há cartas futuras; o resultado é exato no heads-up e sempre que
+  a estimativa couber em 2 s; multiway com ranges grandes segue a regra do FR-016 (Monte Carlo).
 - **Empate entre 3 ou mais jogadores**: o pote é dividido igualmente entre os empatados para fins
   de equity.
 - **Mão específica conhecida** de um participante bloqueia combos nos ranges dos demais, e a
@@ -147,8 +169,9 @@ e conferir que grade, texto e contagem são idênticos.
   informado).
 - **Cancelamento** no meio de um cálculo: nenhum resultado parcial é apresentado como final; se a
   simulação foi interrompida, o resultado parcial aparece como "Estimado" com sua margem de erro.
-- **Alteração das entradas durante um cálculo**: o cálculo em andamento é descartado e o
-  resultado antigo não é exibido como se fosse das novas entradas.
+- **Alteração das entradas durante um cálculo**: o job em andamento é cancelado imediatamente, o
+  resultado antigo deixa de ser exibido como se fosse das novas entradas, a tela mostra
+  "Entradas alteradas" e um novo cálculo só começa quando o jogador clicar em "Calcular".
 
 ## Requirements *(mandatory)*
 
@@ -201,28 +224,36 @@ e conferir que grade, texto e contagem são idênticos.
   ou 5 (river).
 - **FR-015**: O sistema MUST validar as entradas antes do cálculo (cartas duplicadas, board com
   tamanho inválido, participante sem combos possíveis) e explicar o problema.
-- **FR-016**: O sistema MUST calcular por enumeração exata de todas as combinações válidas de mãos
-  e cartas restantes do board sempre que o cálculo exato couber no orçamento de tempo da
-  situação; caso contrário MUST usar simulação Monte Carlo.
+- **FR-016**: O sistema MUST estimar, antes de calcular, o tempo da enumeração exata (nº de
+  combinações válidas de mãos e cartas restantes × custo medido por avaliação) e usar enumeração
+  exata quando a estimativa for ≤ 2 s no hardware de referência; caso contrário MUST usar
+  simulação Monte Carlo. O jogador MUST poder forçar "Exato" ou "Monte Carlo"; forçar "Exato" num
+  caso acima de 2 s mostra o tempo estimado antes de começar. A estimativa é cálculo leve
+  (≤ 200 ms, com benchmark).
 - **FR-017**: O resultado MUST indicar se é "Exato" ou "Estimado"; resultados estimados MUST
   exibir a margem de erro (intervalo de confiança de 95%) de cada equity e o número de amostras.
-- **FR-018**: A simulação MUST continuar refinando até a margem de erro de todos os participantes
-  ficar em no máximo ±0,1 pp, até o jogador parar, ou até um limite de tempo configurável, o que
-  ocorrer primeiro.
+- **FR-018**: A simulação MUST continuar refinando até a margem de erro (IC de 95%) de todos os
+  participantes ficar dentro da margem-alvo (padrão ±0,1 pp, configurável entre ±0,05 e ±1 pp),
+  até o jogador parar, ou até o tempo-limite (padrão 60 s, configurável), o que ocorrer primeiro;
+  o motivo da parada MUST ser exibido.
 - **FR-019**: A equity de um participante MUST ser a fração média do pote ganha (vitórias contam
   1, empates entre k jogadores contam 1/k), ponderando os combos pelos seus pesos e excluindo
   combinações com cartas repetidas entre participantes.
 - **FR-020**: O sistema MUST exibir, por participante: equity, % de vitórias e % de empates.
-- **FR-021**: O cálculo MUST NOT travar a interface; MUST exibir progresso (percentual concluído
-  ou amostras e margem de erro corrente) pelo menos uma vez por segundo e MUST poder ser
-  cancelado.
+- **FR-021**: O cálculo MUST rodar como job no servidor e MUST NOT travar a interface; MUST exibir
+  progresso via WebSocket (percentual concluído ou amostras e margem de erro corrente) pelo menos
+  uma vez por segundo e MUST poder ser cancelado (efeito em ≤ 1 s). Alterar entradas com um cálculo
+  em andamento MUST cancelar esse job; não há recálculo automático.
 - **FR-022**: Com as mesmas entradas e a mesma semente, a simulação MUST produzir exatamente o
   mesmo resultado; a semente usada MUST ser exibida e poder ser informada pelo jogador.
 
 **Distribuição de equity**
 
-- **FR-023**: Para cada participante com range, o sistema MUST exibir a equity, win e tie de cada
-  mão (célula) e de cada combo específico, com o número de combos efetivos.
+- **FR-023**: Para cada participante com range, em qualquer número de participantes (2 a 6) e em
+  cálculo exato ou por Monte Carlo, o sistema MUST exibir a equity, win e tie de cada mão (célula)
+  e de cada combo específico, com o número de combos efetivos. Em Monte Carlo, cada mão e combo
+  MUST mostrar a própria margem de erro (IC de 95%) e o número de amostras, com destaque visual
+  quando a margem passar de ±2 pp.
 - **FR-024**: O sistema MUST colorir a grade do participante conforme a equity de cada célula e
   exibir um gráfico da distribuição de equity do range (combos ordenados por equity).
 
@@ -230,8 +261,9 @@ e conferir que grade, texto e contagem são idênticos.
 
 - **FR-025**: O jogador MUST poder salvar o range de qualquer participante com um nome (1 a 60
   caracteres), listar, carregar em qualquer participante, renomear e excluir ranges salvos.
-- **FR-026**: Ranges salvos MUST persistir entre sessões no mesmo dispositivo e preservar
-  exatamente todos os pesos por combo.
+- **FR-026**: Ranges salvos MUST ficar no servidor local (banco SQLite, via API), persistir entre
+  sessões e reinícios do servidor, preservar exatamente todos os pesos por combo e estar
+  disponíveis tanto na calculadora quanto no formulário do solver (feature 002).
 - **FR-027**: Salvar com um nome existente MUST pedir confirmação antes de sobrescrever; excluir
   MUST pedir confirmação.
 
@@ -278,13 +310,17 @@ e conferir que grade, texto e contagem são idênticos.
   menos de 30 s.
 - **SC-010**: Um range salvo é recuperado idêntico (mesmos combos e pesos) após fechar e reabrir a
   aplicação em 100% dos testes.
+- **SC-011**: No hardware de referência (8 núcleos, 16 GB), o Monte Carlo heads-up processa pelo
+  menos 5 milhões de amostras por segundo, e um cálculo 6-way com ranges amplos atinge a margem
+  de ±0,1 pp em menos de 60 s.
 
 ## Assumptions
 
-- Aplicação de uso individual, sem contas de usuário nem sincronização entre dispositivos; ranges
-  salvos ficam armazenados localmente no dispositivo do jogador.
-- "Hardware de referência" para os orçamentos de tempo é um notebook de uso comum de 2022 ou mais
-  recente; o plano técnico deve fixar a máquina exata usada nos benchmarks.
+- Aplicação de uso individual, sem contas de usuário (servidor local, como na 002); ranges salvos
+  ficam no banco do servidor local, compartilhados entre a calculadora e o solver.
+- "Hardware de referência" para os orçamentos de tempo é o mesmo da 002: notebook de 2022 ou mais
+  recente com 8 núcleos e 16 GB de RAM, execução nativa; o plano fixa a máquina exata dos
+  benchmarks.
 - O % exibido na contagem usa sempre 1326 como denominador, e o numerador já desconta os combos
   bloqueados (conforme o pedido "% do total de mãos (1326 combos), já descontando os bloqueios").
 - Board parcial significa flop (3 cartas) ou turn (4 cartas); boards de 1 ou 2 cartas não são

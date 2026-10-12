@@ -21,6 +21,8 @@ export type JobState = {
   progress: number | null;
   finished: JobMessage | null;
   error: { code: string; detail: string } | null;
+  /** Última mensagem com campos de progresso (snapshot ou progress), para jobs de outros tipos (equity). */
+  lastProgress: JobMessage | null;
 };
 
 export const initialJobState: JobState = {
@@ -35,6 +37,7 @@ export const initialJobState: JobState = {
   progress: null,
   finished: null,
   error: null,
+  lastProgress: null,
 };
 
 const num = (v: unknown, d: number) => (typeof v === "number" ? v : d);
@@ -55,6 +58,7 @@ export function reduceJob(state: JobState, m: JobMessage): JobState {
         iterationsPerS: num(m.iterations_per_s, 0),
         history: (m.history as [number, number, number][] | undefined) ?? [],
         progress: numOrNull(m.progress),
+        lastProgress: m,
       };
     case "progress": {
       const expl = numOrNull(m.exploitability_pct);
@@ -72,6 +76,7 @@ export function reduceJob(state: JobState, m: JobMessage): JobState {
         iterationsPerS: num(m.iterations_per_s, state.iterationsPerS),
         progress: numOrNull(m.progress) ?? state.progress,
         history,
+        lastProgress: m,
       };
     }
     case "status":

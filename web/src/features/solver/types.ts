@@ -96,7 +96,7 @@ export function configToTree(c: ApiTreeConfig): TreeFormState {
     bets: sizes(c.bet_sizes),
     raises: sizes(c.raise_sizes),
     maxRaises: String(c.max_raises_per_street),
-    threshold: String(Math.round(c.allin_threshold * 100)),
+    threshold: String(Math.round((c.allin_threshold ?? 0.67) * 100)),
     addAllin: !!c.add_allin_action,
     donk: !!c.allow_donk,
   };

@@ -1,6 +1,7 @@
-// Grade 13x13 somente leitura (SVG): pares na diagonal, suited acima, offsuit abaixo.
-// Cada célula é dividida em faixas proporcionais às frequências das ações.
-import { useMemo } from "react";
+// Grade 13x13 (SVG): pares na diagonal, suited acima, offsuit abaixo.
+// Cada célula é dividida em faixas proporcionais às frequências das ações. Os handlers de ponteiro
+// opcionais permitem a edição por clique e arrasto (RangeEditor).
+import { useMemo, type PointerEvent } from "react";
 
 export const RANKS = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"] as const;
 
@@ -45,15 +46,34 @@ type Props = {
   actions: GridAction[];
   selected?: string | null;
   onSelect?: (hand: string) => void;
+  onCellPointerDown?: (hand: string, e: PointerEvent) => void;
+  onCellPointerEnter?: (hand: string, e: PointerEvent) => void;
+  showLegend?: boolean;
   size?: number;
 };
 
-export function RangeGrid({ cells, actions, selected, onSelect, size = 520 }: Props) {
+export function RangeGrid({
+  cells,
+  actions,
+  selected,
+  onSelect,
+  onCellPointerDown,
+  onCellPointerEnter,
+  showLegend = true,
+  size = 520,
+}: Props) {
+  const interactive = !!(onSelect || onCellPointerDown);
   const cell = size / 13;
   const colors = useMemo(() => actionColors(actions), [actions]);
   return (
     <div className="range-grid">
-      <svg width={size} height={size} role="grid" aria-label="Grade de mãos 13x13">
+      <svg
+        width={size}
+        height={size}
+        role="grid"
+        aria-label="Grade de mãos 13x13"
+        style={onCellPointerDown ? { touchAction: "none", userSelect: "none" } : undefined}
+      >
         {RANKS.map((_, row) =>
           RANKS.map((__, col) => {
             const hand = handAt(row, col);
@@ -70,7 +90,9 @@ export function RangeGrid({ cells, actions, selected, onSelect, size = 520 }: Pr
                 data-hand={hand}
                 aria-selected={selected === hand}
                 onClick={() => onSelect?.(hand)}
-                style={{ cursor: onSelect ? "pointer" : "default" }}
+                onPointerDown={onCellPointerDown && ((e) => onCellPointerDown(hand, e))}
+                onPointerEnter={onCellPointerEnter && ((e) => onCellPointerEnter(hand, e))}
+                style={{ cursor: interactive ? "pointer" : "default" }}
               >
                 <rect x={x} y={y} width={cell} height={cell} fill={inRange ? "#2b2b2b" : "#d9d9d9"} />
                 {inRange &&
@@ -107,13 +129,15 @@ export function RangeGrid({ cells, actions, selected, onSelect, size = 520 }: Pr
           }),
         )}
       </svg>
-      <ul className="legend" aria-label="Legenda">
-        {actions.map((a, i) => (
-          <li key={a.id}>
-            <span className="swatch" style={{ background: colors[i] }} /> {a.label}
-          </li>
-        ))}
-      </ul>
+      {showLegend && (
+        <ul className="legend" aria-label="Legenda">
+          {actions.map((a, i) => (
+            <li key={a.id}>
+              <span className="swatch" style={{ background: colors[i] }} /> {a.label}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

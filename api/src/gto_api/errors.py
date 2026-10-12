@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from gto_engine.equity.request import InvalidEquityRequestError
 from gto_engine.game.config import InvalidTreeConfigError
 from gto_engine.game.tree import InvalidPathError, InvalidSpotError
 from gto_engine.ranges import RangeNotationError
@@ -76,6 +77,10 @@ def install_handlers(app: FastAPI) -> None:
     @app.exception_handler(RangeNotationError)
     async def _range(_: Request, exc: RangeNotationError) -> JSONResponse:
         return problem(422, "range_invalido", str(exc))
+
+    @app.exception_handler(InvalidEquityRequestError)
+    async def _equity(_: Request, exc: InvalidEquityRequestError) -> JSONResponse:
+        return problem(422, "equity_invalida", str(exc))
 
     @app.exception_handler(InvalidPathError)
     async def _path(_: Request, exc: InvalidPathError) -> JSONResponse:

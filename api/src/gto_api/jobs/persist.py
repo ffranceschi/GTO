@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from gto_api.db.models import AuxJobRow, SolveRow, now_utc
+from gto_api.db.models import AuxJobRow, EquityJobRow, SolveRow, now_utc
 from gto_api.db.session import Database
 from gto_api.jobs.runner import Job, JobEvent
 
@@ -17,6 +17,9 @@ def make_event_hook(db: Database) -> Any:
             return
         t = ev["type"]
         if t not in ("status", "finished", "progress"):
+            return
+        if job.kind == "equity":
+            _persist_equity(db, job, ev)
             return
         with db.session() as s:
             row: SolveRow | AuxJobRow | None
@@ -55,6 +58,25 @@ def make_event_hook(db: Database) -> Any:
                         _apply_aux_result(s, job, ev, row)
 
     return on_event
+
+
+def _persist_equity(db: Database, job: Job, ev: JobEvent) -> None:
+    """Equity: só mudanças de estado e o resultado final (o progresso fica no WebSocket)."""
+    t = ev["type"]
+    if t == "progress" or (t == "status" and ev["status"] not in ("queued", "running")):
+        return  # "stopping" é transitório; o estado final chega no `finished`
+    with db.session() as s:
+        row = s.get(EquityJobRow, job.id)
+        if row is None:
+            return
+        row.status = ev["status"]
+        if t == "finished":
+            row.finished_at = now_utc()
+            err = ev.get("error") or {}
+            row.error_code = err.get("code")
+            row.error_detail = err.get("detail")
+            # cancelado não guarda resultado (R6); concluído guarda o completo
+            row.result_json = ev.get("_result") if ev["status"] == "completed" else None
 
 
 def _apply_aux_result(s: Any, job: Job, ev: JobEvent, row: AuxJobRow) -> None:
@@ -129,6 +151,27 @@ def make_snapshot_lookup(db: Database) -> Any:
                         "stop_reason": solve.stop_reason,
                         "iterations": solve.iterations,
                         "exploitability_pct": solve.exploitability_pct,
+                    }
+                return snap, fin
+            eq = s.get(EquityJobRow, job_id)
+            if eq is not None:
+                snap = {
+                    "type": "snapshot",
+                    "job_id": job_id,
+                    "job_kind": "equity",
+                    "seq": 0,
+                    "status": eq.status,
+                    "method": eq.method,
+                }
+                fin = None
+                if eq.status in ("completed", "failed", "cancelled"):
+                    fin = {
+                        "type": "finished",
+                        "job_id": job_id,
+                        "job_kind": "equity",
+                        "seq": 1,
+                        "status": eq.status,
+                        "stop_reason": (eq.result_json or {}).get("stop_reason"),
                     }
                 return snap, fin
             aux = s.get(AuxJobRow, job_id)

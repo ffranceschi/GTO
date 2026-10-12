@@ -91,3 +91,21 @@ def test_fixar_sem_solucao_409(client: TestClient) -> None:
     ).json()
     assert client.patch(f"/api/v1/solves/{a['id']}", json={"pinned": True}).status_code == 409
     client.delete(f"/api/v1/solves/{a['id']}")
+
+
+def test_cleanup_remove_equity_com_mais_de_24h(client: TestClient) -> None:
+    from gto_api.db.models import EquityJobRow
+
+    with client.app.state.db.session() as db:  # type: ignore[attr-defined]
+        db.add(
+            EquityJobRow(
+                id="old",
+                status="completed",
+                request_json={},
+                finished_at=now_utc() - timedelta(hours=25),
+            )
+        )
+        db.add(EquityJobRow(id="new", status="completed", request_json={}, finished_at=now_utc()))
+    run_cleanup(client)
+    with client.app.state.db.session() as db:  # type: ignore[attr-defined]
+        assert db.get(EquityJobRow, "old") is None and db.get(EquityJobRow, "new") is not None

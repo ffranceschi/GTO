@@ -1,4 +1,4 @@
-"""Funções de job executadas nos workers (raia `solve`)."""
+"""Funções de job executadas nos workers (raias `solve`, `aux` e `equity`)."""
 
 from __future__ import annotations
 
@@ -122,3 +122,45 @@ def cleanup_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict
         (Path(payload["exports_dir"]) / name).unlink(missing_ok=True)
         emit({"type": "progress", "progress": round((len(candidates) + j + 1) / total, 4)})
     return {"status": "completed", "removed": removed}
+
+
+def equity_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[str, Any]:
+    """Raia `equity`: o método já vem resolvido pela API (estimativa da requisição)."""
+    from gto_engine.equity.run import Cancelled, EquityProgress, run_equity
+
+    from gto_api.schemas.equity import EquityRequest, result_json
+
+    req = EquityRequest.model_validate(payload["request"]).to_engine(payload["method"])
+
+    def on_progress(p: EquityProgress) -> None:
+        if p.method == "exact":
+            emit(
+                {
+                    "type": "progress",
+                    "method": "exact",
+                    "fraction": round(p.fraction or 0.0, 4),
+                    "elapsed_s": round(p.elapsed_s, 3),
+                }
+            )
+            return
+        emit(
+            {
+                "type": "progress",
+                "method": "monte_carlo",
+                "samples": p.samples,
+                "elapsed_s": round(p.elapsed_s, 3),
+                "samples_per_s": round(p.samples_per_s),
+                "equities": [round(x, 6) for x in p.equities],
+                "margins": [round(x, 6) for x in p.margins],
+                "target_margin": p.target_margin,
+            }
+        )
+
+    try:
+        r = run_equity(req, ctl, on_progress)
+    except Cancelled as exc:
+        raise JobCancelled() from exc
+    if ctl.cancelled:
+        raise JobCancelled()
+    # o resultado completo vai só para a persistência (campo privado), não para o WebSocket
+    return {"status": "completed", "stop_reason": r.stop_reason, "_result": result_json(r)}

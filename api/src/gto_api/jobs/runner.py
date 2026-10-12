@@ -6,9 +6,9 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
-Lane = Literal["solve", "aux"]
+Lane = Literal["solve", "aux", "equity"]
 Command = Literal["pause", "resume", "stop", "cancel"]
-JobKind = Literal["solve", "export", "import", "cleanup", "test"]
+JobKind = Literal["solve", "export", "import", "cleanup", "equity", "test"]
 FINAL_STATUSES = ("completed", "stopped", "cancelled", "failed")
 
 

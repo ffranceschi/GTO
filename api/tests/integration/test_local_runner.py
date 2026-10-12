@@ -145,3 +145,17 @@ def test_reconciliacao_ao_reiniciar(tmp_path: Path) -> None:
         for st in ("queued", "running", "paused", "stopping", "finalizing"):
             assert rows[st].status == "failed" and rows[st].error_code == "servidor_reiniciado"
         assert s.get(AuxJobRow, "aux").status == "failed"  # type: ignore[union-attr]
+
+
+def test_reconciliacao_inclui_equity(tmp_path: Path) -> None:
+    from gto_api.db.models import EquityJobRow
+
+    db = Database(f"sqlite:///{tmp_path / 'e.sqlite3'}")
+    db.create_all()
+    with db.session() as s:
+        s.add(EquityJobRow(id="e1", status="running", request_json={}))
+        s.add(EquityJobRow(id="e2", status="completed", request_json={}))
+    assert db.reconcile_after_restart() == 1
+    with db.session() as s:
+        assert s.get(EquityJobRow, "e1").status == "failed"  # type: ignore[union-attr]
+        assert s.get(EquityJobRow, "e2").status == "completed"  # type: ignore[union-attr]
