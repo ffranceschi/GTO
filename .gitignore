@@ -1,0 +1,42 @@
+# SO / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Claude Code (configuração local)
+.claude/settings.local.json
+
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.benchmarks/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Numba (cache do JIT)
+*.nbi
+*.nbc
+
+# Node / front-end
+node_modules/
+web/dist/
+web/playwright-report/
+web/test-results/
+
+# Dados locais (SQLite e soluções .npz)
+data/
+*.sqlite3
+*.npz
+!engine/tests/fixtures/**/*.npz
+
+# Variáveis de ambiente
+.env
+.env.*

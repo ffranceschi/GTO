@@ -1,0 +1,606 @@
+openapi: 3.1.0
+info:
+  title: GTO API — Solver postflop
+  version: 1.1.0
+  description: >
+    Contrato de referência da feature 002. Endpoints de ranges e equity pertencem à feature 001.
+    Erros seguem RFC 9457 (application/problem+json) com `code` estável e `detail` em pt-BR.
+    Uso pessoal, sem autenticação; o serviço escuta só em localhost (research R16).
+    Todo cálculo pesado (solve, exportação, importação, limpeza) roda como job assíncrono
+    (Princípio V); os endpoints só criam o job e respondem 202. Progresso em tempo real:
+    WebSocket /jobs/{job_id}/events descrito em websocket.md.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Estado do serviço (pronto só após o warm-up do JIT)
+      responses:
+        "200":
+          description: Pronto
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Aquecendo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /trees/estimate:
+    post:
+      operationId: estimateTree
+      summary: Estima nós e memória da árvore para um spot (FR-009)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SpotWithTree" }
+      responses:
+        "200":
+          description: Estimativa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TreeEstimate" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /tree-configs:
+    get:
+      operationId: listTreeConfigs
+      summary: Lista configurações de árvore salvas (inclui a padrão)
+      responses:
+        "200":
+          description: Lista
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/NamedTreeConfig" }
+    post:
+      operationId: createTreeConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NamedTreeConfigInput" }
+      responses:
+        "201":
+          description: Criada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NamedTreeConfig" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /tree-configs/{config_id}:
+    parameters:
+      - $ref: "#/components/parameters/ConfigId"
+    put:
+      operationId: updateTreeConfig
+      summary: Renomeia ou sobrescreve uma configuração
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NamedTreeConfigInput" }
+      responses:
+        "200":
+          description: Atualizada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NamedTreeConfig" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteTreeConfig
+      responses:
+        "204": { description: Excluída }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /solves:
+    post:
+      operationId: createSolve
+      summary: Cria um solve (entra na fila). Reaproveita solução concluída com o mesmo hash, salvo `force`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SolveRequest" }
+      responses:
+        "202":
+          description: Aceito (novo ou em fila)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Solve" }
+        "200":
+          description: Solução existente reaproveitada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Solve" }
+        "422":
+          description: "Entradas inválidas ou `arvore_grande_demais`"
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+    get:
+      operationId: listSolves
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/SolveStatus" }
+      responses:
+        "200":
+          description: Lista (mais recentes primeiro)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Solve" }
+
+  /solves/{solve_id}:
+    parameters:
+      - $ref: "#/components/parameters/SolveId"
+    get:
+      operationId: getSolve
+      responses:
+        "200":
+          description: Solve
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Solve" }
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: updateSolve
+      summary: Fixa ou desafixa uma solução (FR-029)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pinned]
+              properties:
+                pinned: { type: boolean }
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Solve" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: cancelSolve
+      summary: Cancela (sem gravar solução) se ativo; remove registro e arquivo se terminado
+      responses:
+        "202": { description: Cancelamento solicitado }
+        "204": { description: Removido }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /solves/{solve_id}/pause:
+    parameters: [{ $ref: "#/components/parameters/SolveId" }]
+    post:
+      operationId: pauseSolve
+      responses:
+        "202": { description: Pausa solicitada (idempotente) }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /solves/{solve_id}/resume:
+    parameters: [{ $ref: "#/components/parameters/SolveId" }]
+    post:
+      operationId: resumeSolve
+      responses:
+        "202": { description: Retomada solicitada (idempotente) }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /solves/{solve_id}/stop:
+    parameters: [{ $ref: "#/components/parameters/SolveId" }]
+    post:
+      operationId: stopSolve
+      summary: Para e grava a estratégia atual com explotabilidade exata (FR-015)
+      responses:
+        "202": { description: Parada solicitada (idempotente) }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /solves/{solve_id}/nodes:
+    parameters: [{ $ref: "#/components/parameters/SolveId" }]
+    get:
+      operationId: getNode
+      summary: Visão de um nó (estratégia, ranges, EV e equity por mão e combo)
+      parameters:
+        - name: path
+          in: query
+          description: 'Caminho de ids separados por "/"; vazio = raiz. Exemplo: "x/b75/c/Kh"'
+          schema: { type: string, default: "" }
+      responses:
+        "200":
+          description: Nó
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NodeView" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409":
+          description: "Solve sem solução disponível (`solucao_indisponivel`)"
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /solves/{solve_id}/exports:
+    parameters: [{ $ref: "#/components/parameters/SolveId" }]
+    post:
+      operationId: createExport
+      summary: Cria um job de exportação (.npz comprimido) na raia aux
+      responses:
+        "202":
+          description: Job criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuxJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /solutions/import:
+    post:
+      operationId: importSolution
+      summary: Recebe o arquivo (streaming para disco) e cria um job de importação
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "202":
+          description: Job de importação criado; ao concluir, `solve_id` aponta para a solução importada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuxJob" }
+        "413": { $ref: "#/components/responses/Problem" }
+
+  /aux-jobs/{job_id}:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    get:
+      operationId: getAuxJob
+      responses:
+        "200":
+          description: Job
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuxJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: cancelAuxJob
+      responses:
+        "202": { description: Cancelamento solicitado }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /aux-jobs/{job_id}/file:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    get:
+      operationId: downloadExport
+      summary: Download do arquivo de um job de exportação concluído (streaming, sem cálculo)
+      responses:
+        "200":
+          description: Arquivo de solução (.npz)
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "410": { $ref: "#/components/responses/Problem" }
+
+  /storage:
+    get:
+      operationId: getStorageUsage
+      summary: Uso de disco e política de retenção (FR-030)
+      responses:
+        "200":
+          description: Uso
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StorageUsage" }
+
+components:
+  parameters:
+    SolveId:
+      name: solve_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ConfigId:
+      name: config_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Problem:
+      description: Erro
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code, detail]
+      properties:
+        type: { type: string, format: uri-reference, example: "about:blank" }
+        title: { type: string }
+        status: { type: integer }
+        code:
+          type: string
+          description: Identificador estável
+          example: arvore_grande_demais
+        detail: { type: string, description: Mensagem em pt-BR }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              detail: { type: string }
+
+    Health:
+      type: object
+      required: [status, engine_version]
+      properties:
+        status: { type: string, enum: [ready, warming_up] }
+        engine_version: { type: string }
+
+    Street: { type: string, enum: [flop, turn, river] }
+    Position: { type: string, enum: [oop, ip] }
+
+    RangeInput:
+      description: Range da feature 001 — notação textual OU vetor de 1326 pesos
+      oneOf:
+        - type: object
+          required: [notation]
+          properties:
+            notation: { type: string, example: "22+, A2s+, KTo+, KQo:0.5" }
+        - type: object
+          required: [weights]
+          properties:
+            weights:
+              type: array
+              minItems: 1326
+              maxItems: 1326
+              items: { type: number, minimum: 0, maximum: 1 }
+
+    Spot:
+      type: object
+      required: [oop_range, ip_range, board, pot, effective_stack]
+      properties:
+        oop_range: { $ref: "#/components/schemas/RangeInput" }
+        ip_range: { $ref: "#/components/schemas/RangeInput" }
+        board:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: string, pattern: "^[AKQJT2-9][shdc]$" }
+          example: ["Ks", "7d", "2c", "Jh", "3s"]
+        pot: { type: number, exclusiveMinimum: 0, maximum: 10000 }
+        effective_stack: { type: number, minimum: 0, maximum: 10000 }
+
+    SizesByPosition:
+      type: object
+      properties:
+        oop:
+          type: array
+          maxItems: 5
+          items: { type: number, exclusiveMinimum: 0, maximum: 10 }
+        ip:
+          type: array
+          maxItems: 5
+          items: { type: number, exclusiveMinimum: 0, maximum: 10 }
+
+    TreeConfig:
+      type: object
+      required: [bet_sizes, raise_sizes, max_raises_per_street, allin_threshold]
+      properties:
+        bet_sizes:
+          type: object
+          description: Frações do pote por street e posição
+          additionalProperties: { $ref: "#/components/schemas/SizesByPosition" }
+          example: { river: { oop: [0.33, 0.75], ip: [0.33, 0.75] } }
+        raise_sizes:
+          type: object
+          description: Frações do pote após o call
+          additionalProperties: { $ref: "#/components/schemas/SizesByPosition" }
+        max_raises_per_street: { type: integer, minimum: 0, maximum: 6, default: 3 }
+        allin_threshold: { type: number, exclusiveMinimum: 0, maximum: 1, default: 0.67 }
+        add_allin_action: { type: boolean, default: false }
+        allow_donk: { type: boolean, default: false }
+
+    NamedTreeConfigInput:
+      type: object
+      required: [name, config]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        config: { $ref: "#/components/schemas/TreeConfig" }
+        overwrite: { type: boolean, default: false }
+
+    NamedTreeConfig:
+      allOf:
+        - $ref: "#/components/schemas/NamedTreeConfigInput"
+        - type: object
+          required: [id, is_default, updated_at]
+          properties:
+            id: { type: string, format: uuid }
+            is_default: { type: boolean }
+            updated_at: { type: string, format: date-time }
+
+    SpotWithTree:
+      type: object
+      required: [spot, tree]
+      properties:
+        spot: { $ref: "#/components/schemas/Spot" }
+        tree: { $ref: "#/components/schemas/TreeConfig" }
+
+    TreeEstimate:
+      type: object
+      required: [decision_nodes, chance_nodes, terminal_nodes, estimated_bytes, estimated_solution_bytes, max_bytes, within_limit, isomorphism_factor]
+      properties:
+        decision_nodes: { type: integer }
+        chance_nodes: { type: integer }
+        terminal_nodes: { type: integer }
+        estimated_bytes: { type: integer, description: Pico de memória estimado do solve }
+        estimated_solution_bytes: { type: integer, description: Tamanho estimado da solução em disco }
+        max_bytes: { type: integer }
+        within_limit: { type: boolean }
+        isomorphism_factor: { type: number, description: "Redução obtida pelo isomorfismo de naipes (≥ 1)" }
+        suggestions:
+          type: array
+          items: { type: string }
+          description: Sugestões em pt-BR para reduzir a árvore quando within_limit = false
+
+    SolveParams:
+      type: object
+      properties:
+        algorithm: { type: string, enum: [dcfr, cfr_plus, linear_cfr], default: dcfr }
+        target_exploitability_pct: { type: number, exclusiveMinimum: 0, maximum: 100, default: 0.5 }
+        time_limit_s: { type: number, exclusiveMinimum: 0, maximum: 86400, description: "Se omitido: river 60, turn 120, flop 900 (por street do board)" }
+        max_iterations: { type: [integer, "null"], minimum: 1 }
+        seed: { type: integer, minimum: 0, default: 0 }
+
+    SolveRequest:
+      allOf:
+        - $ref: "#/components/schemas/SpotWithTree"
+        - type: object
+          properties:
+            params: { $ref: "#/components/schemas/SolveParams" }
+            force: { type: boolean, default: false, description: Resolver mesmo se houver solução com o mesmo hash }
+
+    SolveStatus:
+      type: string
+      enum: [queued, running, paused, stopping, finalizing, completed, stopped, cancelled, failed, expired]
+
+    Solve:
+      type: object
+      required: [id, status, origin, input_hash, created_at, iterations, pinned]
+      properties:
+        id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/SolveStatus" }
+        origin: { type: string, enum: [solve, import] }
+        input_hash: { type: string, minLength: 64, maxLength: 64 }
+        spot: { $ref: "#/components/schemas/Spot" }
+        tree: { $ref: "#/components/schemas/TreeConfig" }
+        params: { $ref: "#/components/schemas/SolveParams" }
+        estimated_bytes: { type: integer }
+        iterations: { type: integer }
+        exploitability_pct: { type: [number, "null"] }
+        stop_reason: { type: [string, "null"], enum: [target_reached, time_limit, user_stopped, null] }
+        queue_position: { type: [integer, "null"], description: "Posição na fila (1 = próximo); null se não está na fila" }
+        pinned: { type: boolean }
+        size_bytes: { type: [integer, "null"] }
+        last_used_at: { type: [string, "null"], format: date-time }
+        expires_at: { type: [string, "null"], format: date-time, description: "null se fixada ou sem solução" }
+        error: { oneOf: [{ $ref: "#/components/schemas/Problem" }, { type: "null" }] }
+        created_at: { type: string, format: date-time }
+        started_at: { type: [string, "null"], format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }
+
+    AuxJob:
+      type: object
+      required: [id, kind, status, progress, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [export, import, cleanup] }
+        status: { type: string, enum: [queued, running, completed, failed, cancelled] }
+        solve_id: { type: [string, "null"], format: uuid }
+        progress: { type: number, minimum: 0, maximum: 1 }
+        download_url: { type: [string, "null"], description: "Export concluído: /api/v1/aux-jobs/{id}/file" }
+        file_expires_at: { type: [string, "null"], format: date-time }
+        error: { oneOf: [{ $ref: "#/components/schemas/Problem" }, { type: "null" }] }
+        created_at: { type: string, format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }
+
+    StorageUsage:
+      type: object
+      required: [total_bytes, solutions, pinned, retention_days, expiring_soon]
+      properties:
+        total_bytes: { type: integer }
+        solutions: { type: integer }
+        pinned: { type: integer }
+        retention_days: { type: integer, example: 30 }
+        expiring_soon: { type: integer, description: Soluções a 7 dias ou menos da exclusão automática }
+
+    ActionView:
+      type: object
+      required: [id, kind, label, amount_bb, aggregate_frequency, combos]
+      properties:
+        id: { type: string, example: b75 }
+        kind: { type: string, enum: [check, bet, call, raise, fold, allin] }
+        label: { type: string, example: "Bet 75% (7,5 bb)" }
+        amount_bb: { type: number }
+        pot_fraction: { type: [number, "null"] }
+        aggregate_frequency: { type: number, minimum: 0, maximum: 1 }
+        combos: { type: number, description: Combos ponderados que escolhem a ação }
+
+    HandView:
+      type: object
+      required: [hand, combos, frequencies, ev_bb, equity]
+      properties:
+        hand: { type: string, example: AKs }
+        combos: { type: number }
+        frequencies: { type: object, additionalProperties: { type: number } }
+        ev_bb: { type: number }
+        equity: { type: number }
+
+    ComboView:
+      type: object
+      required: [combo, reach_weight, frequencies, ev_bb, equity]
+      properties:
+        combo: { type: string, example: AhKh }
+        reach_weight: { type: number }
+        frequencies: { type: object, additionalProperties: { type: number } }
+        ev_bb: { type: number }
+        equity: { type: number }
+
+    RangeAtNode:
+      type: object
+      required: [player, combos, weights]
+      properties:
+        player: { $ref: "#/components/schemas/Position" }
+        combos: { type: number }
+        weights:
+          type: array
+          minItems: 1326
+          maxItems: 1326
+          items: { type: number }
+
+    NodeView:
+      type: object
+      required: [path, kind, pot, stacks, ranges]
+      properties:
+        path: { type: array, items: { type: string } }
+        breadcrumb: { type: array, items: { type: string }, example: ["Check", "Bet 75% (7,5 bb)"] }
+        kind: { type: string, enum: [decision, chance, terminal] }
+        player: { oneOf: [{ $ref: "#/components/schemas/Position" }, { type: "null" }] }
+        pot: { type: number }
+        stacks: { type: object, properties: { oop: { type: number }, ip: { type: number } } }
+        actions: { type: array, items: { $ref: "#/components/schemas/ActionView" } }
+        hands: { type: array, items: { $ref: "#/components/schemas/HandView" } }
+        combos: { type: array, items: { $ref: "#/components/schemas/ComboView" } }
+        ranges: { type: array, items: { $ref: "#/components/schemas/RangeAtNode" } }
+        next_cards:
+          type: array
+          description: Cartas possíveis em nós de chance (bloqueadas omitidas)
+          items: { type: string }
+        terminal:
+          type: [object, "null"]
+          properties:
+            kind: { type: string, enum: [fold, showdown] }
