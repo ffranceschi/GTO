@@ -15,9 +15,6 @@ from fastapi.testclient import TestClient
 CONTRACT = Path(__file__).resolve().parents[3] / "specs/002-postflop-solver/contracts/openapi.yaml"
 SPEC: dict[str, Any] = yaml.safe_load(CONTRACT.read_text())
 STORY = {
-    "/trees/estimate": "US3",
-    "/tree-configs": "US3",
-    "/tree-configs/{config_id}": "US3",
     "/solves/{solve_id}/exports": "US4",
     "/solutions/import": "US4",
     "/aux-jobs/{job_id}": "US4",

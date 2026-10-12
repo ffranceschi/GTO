@@ -6,8 +6,8 @@ test("resolve um turn pequeno e navega pela árvore com cartas", async ({ page }
   await page.getByLabel("Range IP").fill("QQ+, AK, KJ, 76s");
   await page.getByLabel("Board").fill("Ks 7d 2c Jh");
   await page.getByLabel(/Explotabilidade alvo/).fill("1");
-  await page.locator("details summary", { hasText: "Árvore" }).click();
-  await page.getByLabel(/Bets/).fill("75");
+  await page.getByLabel("Bets em todas as streets (%)").fill("75");
+  await page.getByRole("button", { name: "Aplicar a todas" }).click();
   await page.getByRole("button", { name: "Resolver" }).click();
   await expect(page.getByTestId("status")).toHaveText(/Concluído|Parado/, { timeout: 60_000 });
 

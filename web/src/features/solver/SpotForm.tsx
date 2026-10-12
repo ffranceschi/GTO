@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { api, problemMessage } from "../../api/client";
+import { api, problemMessage, type Schemas } from "../../api/client";
 import { RangeGrid, type CellData } from "../../components/RangeGrid/RangeGrid";
 import { formatNumber, formatPct } from "../../i18n/format";
 import { t } from "../../i18n/pt-BR";
-import { boardCards, defaultTimeLimit, type SpotFormState } from "./types";
+import { TreeConfigEditor } from "./TreeConfigEditor";
+import { boardCards, defaultTimeLimit, toSpot, type SpotFormState } from "./types";
 
 type Props = {
   value: SpotFormState;
@@ -74,6 +75,8 @@ function RangeField(props: { label: string; value: string; board: string[]; onCh
 
 export function SpotForm({ value, onChange, onSubmit, errors, busy }: Props) {
   const set = (k: keyof SpotFormState) => (v: string) => onChange({ ...value, [k]: v });
+  const [estimate, setEstimate] = useState<Schemas["TreeEstimate"] | null>(null);
+  const overLimit = estimate !== null && !estimate.within_limit;
   const cards = boardCards(value.board);
   return (
     <form
@@ -119,20 +122,14 @@ export function SpotForm({ value, onChange, onSubmit, errors, busy }: Props) {
           />
         </label>
       </div>
-      <details>
-        <summary>{t.spot.tree}</summary>
-        <p>{t.spot.treeDefault}</p>
-        <label>
-          {t.spot.betSizes}
-          <input value={value.bets} onChange={(e) => set("bets")(e.target.value)} />
-        </label>
-        <label>
-          {t.spot.raiseSizes}
-          <input value={value.raises} onChange={(e) => set("raises")(e.target.value)} />
-        </label>
-      </details>
+      <TreeConfigEditor
+        value={value.tree}
+        onChange={(tree) => onChange({ ...value, tree })}
+        spot={toSpot(value)}
+        onEstimate={setEstimate}
+      />
       {errors._ && <p className="error">{errors._}</p>}
-      <button type="submit" disabled={busy || cards.length < 3 || cards.length > 5}>
+      <button type="submit" disabled={busy || overLimit || cards.length < 3 || cards.length > 5}>
         {t.spot.solve}
       </button>
     </form>

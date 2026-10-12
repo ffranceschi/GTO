@@ -93,10 +93,13 @@ def create_app(settings: Settings | None = None, runner: LaneJobRunner | None = 
 
 def _include_routers(app: FastAPI) -> None:
     """Cada story registra aqui o seu router (T042)."""
-    from gto_api.routers import ranges, solves
+    from gto_api.routers import ranges, solves, tree_configs, trees
 
     app.include_router(ranges.router)
     app.include_router(solves.router)
+    app.include_router(trees.router)
+    app.include_router(tree_configs.router)
+    app.state.startup_hooks.append(lambda a: tree_configs.seed_default(a.state.db))
 
 
 app = create_app()

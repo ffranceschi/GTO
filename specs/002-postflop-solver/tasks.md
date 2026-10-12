@@ -205,16 +205,16 @@ as ações de cada nó; pedir a estimativa da árvore padrão de flop e ver a re
 
 ### Tests for User Story 3 ⚠️ (escrever primeiro; devem falhar)
 
-- [ ] T077 [P] [US3] Testes das opções do builder: `add_allin_action = true` adiciona all-in como ação extra sem duplicar quando coincide com um tamanho; `allow_donk = true` permite OOP apostar primeiro numa street depois de IP ter apostado na anterior, em engine/tests/unit/test_tree_builder_options.py
-- [ ] T078 [P] [US3] Testes de integração: `POST /api/v1/trees/estimate` retorna `decision_nodes`, `chance_nodes`, `terminal_nodes`, `estimated_bytes`, `estimated_solution_bytes`, `max_bytes`, `within_limit`, `isomorphism_factor` e `suggestions` pt-BR quando `within_limit = false`; CRUD de `/api/v1/tree-configs`: `name` "1–60 caracteres", nome duplicado ⇒ 409 salvo `overwrite: true`, configuração padrão listada com `is_default = true` e não excluível, em api/tests/integration/test_tree_configs_api.py
+- [X] T077 [P] [US3] Testes das opções do builder: `add_allin_action = true` adiciona all-in como ação extra sem duplicar quando coincide com um tamanho; `allow_donk = true` permite OOP apostar primeiro numa street depois de IP ter apostado na anterior, em engine/tests/unit/test_tree_builder_options.py
+- [X] T078 [P] [US3] Testes de integração: `POST /api/v1/trees/estimate` retorna `decision_nodes`, `chance_nodes`, `terminal_nodes`, `estimated_bytes`, `estimated_solution_bytes`, `max_bytes`, `within_limit`, `isomorphism_factor` e `suggestions` pt-BR quando `within_limit = false`; CRUD de `/api/v1/tree-configs`: `name` "1–60 caracteres", nome duplicado ⇒ 409 salvo `overwrite: true`, configuração padrão listada com `is_default = true` e não excluível, em api/tests/integration/test_tree_configs_api.py
 
 ### Implementation for User Story 3
 
-- [ ] T079 [US3] Implementar `add_allin_action` e `allow_donk` no builder, em engine/src/gto_engine/game/builder.py
-- [ ] T080 [US3] Implementar `POST /api/v1/trees/estimate` com sugestões pt-BR (reduzir tamanhos, reduzir raises, reduzir ranges) quando passar do limite, em api/src/gto_api/routers/trees.py
-- [ ] T081 [US3] Implementar o CRUD `GET|POST /api/v1/tree-configs` e `PUT|DELETE /api/v1/tree-configs/{config_id}`, com a configuração padrão semeada no startup, em api/src/gto_api/routers/tree_configs.py
-- [ ] T082 [P] [US3] Implementar o editor de árvore: tamanhos de bet e raise por street e posição (até 5, em % do pote), limite de raises (0–6), threshold, all-in extra, donk; estimativa ao vivo (nós, memória, tamanho em disco, dentro/fora do limite com sugestões); salvar, carregar, renomear e excluir configurações nomeadas, em web/src/features/solver/TreeConfigEditor.tsx
-- [ ] T083 [US3] Teste E2E: configurar 1 bet, 1 raise e limite 1 no river e conferir as ações no navegador; tentar a árvore padrão de flop e ver o botão "Resolver" bloqueado com as sugestões, em web/tests/e2e/tree-config.spec.ts
+- [X] T079 [US3] Implementar `add_allin_action` e `allow_donk` no builder, em engine/src/gto_engine/game/builder.py
+- [X] T080 [US3] Implementar `POST /api/v1/trees/estimate` com sugestões pt-BR (reduzir tamanhos, reduzir raises, reduzir ranges) quando passar do limite, em api/src/gto_api/routers/trees.py
+- [X] T081 [US3] Implementar o CRUD `GET|POST /api/v1/tree-configs` e `PUT|DELETE /api/v1/tree-configs/{config_id}`, com a configuração padrão semeada no startup, em api/src/gto_api/routers/tree_configs.py
+- [X] T082 [P] [US3] Implementar o editor de árvore: tamanhos de bet e raise por street e posição (até 5, em % do pote), limite de raises (0–6), threshold, all-in extra, donk; estimativa ao vivo (nós, memória, tamanho em disco, dentro/fora do limite com sugestões); salvar, carregar, renomear e excluir configurações nomeadas, em web/src/features/solver/TreeConfigEditor.tsx
+- [X] T083 [US3] Teste E2E: configurar 1 bet, 1 raise e limite 1 no river e conferir as ações no navegador; tentar a árvore padrão de flop e ver o botão "Resolver" bloqueado com as sugestões, em web/tests/e2e/tree-config.spec.ts
 
 **Checkpoint**: US1–US3 funcionam de forma independente.
 
@@ -261,6 +261,7 @@ final.
 - [ ] T098 Integrar o editor interativo de ranges e os ranges salvos da feature 001 no formulário do spot (FR-001), substituindo o campo de notação textual quando a 001 estiver disponível; **depende da implementação da 001**, em web/src/features/solver/SpotForm.tsx
 - [ ] T099 [P] Revisar todos os textos da UI e os `detail` de erros da API para pt-BR, com números em formato pt-BR e ações em jargão de poker (FR-023 e Princípio VIII da constituição), em web/src/i18n/pt-BR.ts e api/src/gto_api/errors.py
 - [ ] T100 Executar specs/002-postflop-solver/quickstart.md de ponta a ponta (motor, benchmarks de referência, API, front, Docker) incluindo a validação manual do SC-009 (configurar e iniciar o spot de referência de river em menos de 2 min), e registrar os tempos medidos no hardware de referência em specs/002-postflop-solver/quickstart.md
+- [ ] T101 Gravar a estrutura da árvore (tipos de nó, filhos, ações, investimentos, offsets, isomorfismo, permutações de mãos e tabelas de força) como arrays `.npy` no diretório da solução e montar o `GameTree` para consulta a partir deles via mmap, sem chamar `build_tree`; a primeira consulta de nó de uma solução de flop deve ficar ≤ 200 ms (hoje leva ≈ 2,8 s, violando o Princípio V), com benchmark que abre a solução do flop de referência a frio, em engine/src/gto_engine/io/solution_dir.py, api/src/gto_api/storage/solutions.py e engine/tests/benchmarks/test_bench_turn_flop.py
 
 ---
 
