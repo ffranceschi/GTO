@@ -1,0 +1,83 @@
+{
+  "spot": {
+    "oop_range": {
+      "notation": "22-TT, A2s-AQs, K5s+, Q7s+, J7s+, T7s+, 96s+, 85s+, 74s+, 63s+, 53s+, 43s, A8o-AQo, K9o+, Q9o+, J9o+, T9o, 98o"
+    },
+    "ip_range": {
+      "notation": "22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 85s+, 74s+, 63s+, 53s+, 43s, A5o+, K9o+, Q9o+, J9o+, T9o, 98o"
+    },
+    "board": [
+      "Ks",
+      "7d",
+      "2c",
+      "Jh",
+      "3s"
+    ],
+    "pot": 10,
+    "effective_stack": 50
+  },
+  "tree": {
+    "bet_sizes": {
+      "flop": {
+        "oop": [
+          0.5,
+          1.0
+        ],
+        "ip": [
+          0.5,
+          1.0
+        ]
+      },
+      "turn": {
+        "oop": [
+          0.5,
+          1.0
+        ],
+        "ip": [
+          0.5,
+          1.0
+        ]
+      },
+      "river": {
+        "oop": [
+          0.5,
+          1.0
+        ],
+        "ip": [
+          0.5,
+          1.0
+        ]
+      }
+    },
+    "raise_sizes": {
+      "flop": {
+        "oop": [
+          1.0
+        ],
+        "ip": [
+          1.0
+        ]
+      },
+      "turn": {
+        "oop": [
+          1.0
+        ],
+        "ip": [
+          1.0
+        ]
+      },
+      "river": {
+        "oop": [
+          1.0
+        ],
+        "ip": [
+          1.0
+        ]
+      }
+    },
+    "max_raises_per_street": 3,
+    "allin_threshold": 0.67,
+    "add_allin_action": false,
+    "allow_donk": false
+  }
+}

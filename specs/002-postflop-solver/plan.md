@@ -41,11 +41,12 @@ Decisões e números em [research.md](./research.md).
 | `sqlalchemy` 2 | API | persistência portável SQLite → PostgreSQL (pedido do usuário) |
 | `python-multipart` | API | upload `multipart/form-data` da importação (exigido pelo FastAPI) |
 | `httpx` | API (dev) | exigido pelo `TestClient` do FastAPI; os testes da API e do WebSocket são síncronos, sem `pytest-asyncio` |
+| `pyyaml` | API (dev) | ler `contracts/openapi.yaml` no teste de contrato (T041) |
 | `pytest`, `hypothesis`, `pytest-benchmark` | dev | testes, property-based e benchmarks (Princípios IV e V) |
 | `ruff`, `mypy` | dev | lint, formatação, banimento de imports no motor (`TID251`) e tipagem estrita |
 | React, Vite, TypeScript | front | SPA pedida na stack |
 | `openapi-typescript` + `openapi-fetch` | front | cliente tipado gerado do OpenAPI, só tipos + `fetch` fino |
-| Vitest, Playwright | front (dev) | testes unitários e E2E |
+| Vitest, Playwright, `jsdom`, `@testing-library/react`, `@vitejs/plugin-react` | front (dev) | testes unitários (DOM simulado) e E2E; plugin React do Vite |
 
 **Storage**:
 - SQLite (SQLAlchemy 2; portável para PostgreSQL) com as tabelas `tree_configs`, `solves` e

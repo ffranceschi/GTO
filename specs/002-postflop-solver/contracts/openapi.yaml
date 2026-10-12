@@ -28,6 +28,23 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
 
+  /ranges/parse:
+    post:
+      operationId: parseRange
+      summary: Converte notação em pesos e conta combos (cálculo leve; base para a feature 001)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RangeParseRequest" }
+      responses:
+        "200":
+          description: Range
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RangeParseResult" }
+        "422": { $ref: "#/components/responses/Problem" }
+
   /trees/estimate:
     post:
       operationId: estimateTree
@@ -380,6 +397,26 @@ components:
               maxItems: 1326
               items: { type: number, minimum: 0, maximum: 1 }
 
+    RangeParseRequest:
+      type: object
+      required: [notation]
+      properties:
+        notation: { type: string }
+        board:
+          type: array
+          maxItems: 5
+          items: { type: string, pattern: "^[AKQJT2-9][shdc]$" }
+
+    RangeParseResult:
+      type: object
+      required: [canonical, weights, combos, combos_after_board, pct_of_total]
+      properties:
+        canonical: { type: string }
+        weights: { type: array, minItems: 1326, maxItems: 1326, items: { type: number } }
+        combos: { type: number }
+        combos_after_board: { type: number }
+        pct_of_total: { type: number, description: "combos_after_board / 1326" }
+
     Spot:
       type: object
       required: [oop_range, ip_range, board, pot, effective_stack]
@@ -604,3 +641,10 @@ components:
           type: [object, "null"]
           properties:
             kind: { type: string, enum: [fold, showdown] }
+        solution:
+          type: [object, "null"]
+          description: Cabeçalho da solução exibido em todos os nós (Princípio II)
+          properties:
+            exploitability_pct: { type: [number, "null"] }
+            iterations: { type: integer }
+            stop_reason: { type: [string, "null"] }

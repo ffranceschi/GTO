@@ -330,6 +330,12 @@ Kuhn e um river minúsculo e calcula uma equity) para gravar o cache. No startup
 worker do pool executa o mesmo warm-up antes de aceitar jobs, e a API só fica `ready`
 (`GET /api/v1/health`) depois disso.
 
+**Desvio na implementação**: o Numba não cacheia com segurança funções **recursivas** (o
+carregamento do cache causou segfault). A travessia do CFR (`traverse`) e quem a chama
+(`run_iterations`, `root_values`) usam `@njit(nogil=True)` sem `cache`; os demais kernels mantêm
+`cache=True`. O warm-up do startup compila essa cadeia uma vez por processo, fora do caminho
+das requisições.
+
 **Racional**: o cache do Numba é por arquitetura de CPU; se a máquina de execução for diferente
 da de build, o warm-up do startup recompila uma vez, fora do caminho da primeira requisição.
 

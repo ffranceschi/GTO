@@ -40,3 +40,4 @@ data/
 # Variáveis de ambiente
 .env
 .env.*
+engine/src/gto_engine/evaluator/_cache/

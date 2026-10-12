@@ -1,0 +1,41 @@
+[project]
+name = "gto-workspace"
+version = "0.1.0"
+description = "Estudo de poker GTO — workspace (motor + API)"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["engine", "api"]
+
+[dependency-groups]
+dev = ["ruff>=0.6", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "TID", "N", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "N803", "N806", "N818"]
+
+# Princípio III: o banimento de imports web/DB no motor fica em engine/pyproject.toml (TID251).
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = ["engine/src", "api/src"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["numba.*", "phevaluator.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["gto_engine.evaluator.kernels", "gto_engine.solver.kernels", "gto_engine.solver.finalize_kernels"]
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+disallow_untyped_calls = false
