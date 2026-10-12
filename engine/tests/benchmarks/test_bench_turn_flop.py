@@ -56,3 +56,24 @@ def test_flop_referencia_10min_4gib() -> None:
         n0 = time.perf_counter()
         node_view(tree, sol, path)
         assert time.perf_counter() - n0 <= 0.2, path
+
+
+@pytest.mark.benchmark_ref
+def test_t101_abrir_solucao_de_flop_a_frio_200ms(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from gto_engine.io.solution_dir import open_solution_dir, open_tree_dir, save_solution_dir
+
+    spot, cfg = load_spot("flop_reference.json")
+    tree = build_tree(spot, cfg)
+    params = SolveParams(max_iterations=1, target_exploitability_pct=0.0)
+    sol = solution_from_result(tree, spot, cfg, params, solve(tree, params))
+    d = tmp_path / "flop"
+    save_solution_dir(sol, d, tree)
+    del tree, sol
+    t0 = time.perf_counter()
+    reopened = open_tree_dir(d)
+    opened = open_solution_dir(d)
+    assert reopened is not None
+    node_view(reopened, opened, [])
+    dt = time.perf_counter() - t0
+    print(f"T101: abrir a solução do flop a frio + nó raiz em {dt * 1000:.0f} ms")
+    assert dt <= 0.2

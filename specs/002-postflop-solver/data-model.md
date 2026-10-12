@@ -199,7 +199,9 @@ $GTO_DATA_DIR/
 │       ├── meta.json
 │       ├── strategy.npy  ev.npy  equity.npy
 │       ├── node_offsets.npy  combo_offsets.npy
-│       └── exploitability_history.npy
+│       ├── exploitability_history.npy
+│       ├── tree.json                 # metadados da árvore (pote, street, boards, textos)
+│       └── tree_*.npy                # árvore em arrays, aberta por mmap (T101)
 ├── exports/
 │   └── <aux_job_id>.npz         # formato de troca, comprimido; expira em 24 h
 └── imports/                     # uploads em andamento (temporários)

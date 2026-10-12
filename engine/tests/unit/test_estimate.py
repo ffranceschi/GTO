@@ -50,4 +50,9 @@ def test_river_contagem_e_bytes(
     assert est.isomorphism_factor == 1.0
     combos = [tree.n_hands(p) for p in ("oop", "ip")]
     sol = sum(a * combos[pl] * 4 + combos[pl] * 8 for a, pl in tree.decision_shapes())
-    assert est.estimated_solution_bytes == sol
+    arrays, _ = tree.to_arrays()
+    tree_bytes = sum(a.nbytes for a in arrays.values()) - sum(
+        arrays[k].nbytes
+        for k in ("hands0", "hands1", "hand_cards0", "hand_cards1", "weights0", "weights1")
+    )
+    assert est.estimated_solution_bytes == pytest.approx(sol + tree_bytes, rel=0.15)

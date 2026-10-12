@@ -11,7 +11,12 @@ from pathlib import Path
 from gto_engine.game.builder import build_tree
 from gto_engine.game.config import TreeConfig
 from gto_engine.game.tree import GameTree
-from gto_engine.io.solution_dir import Solution, open_solution_dir, spot_from_dict
+from gto_engine.io.solution_dir import (
+    Solution,
+    open_solution_dir,
+    open_tree_dir,
+    spot_from_dict,
+)
 
 LRU_SIZE = 2
 LAST_USED_MIN_INTERVAL_S = 60.0
@@ -33,7 +38,10 @@ class SolutionStore:
                 self._lru.move_to_end(solution_dir)
                 return self._lru[solution_dir]
         sol = open_solution_dir(self.path(solution_dir))
-        tree = build_tree(spot_from_dict(sol.meta.spot), TreeConfig.from_dict(sol.meta.tree_config))
+        # árvore gravada (mmap, ≤ 200 ms — T101); soluções antigas sem árvore são reconstruídas
+        tree = open_tree_dir(self.path(solution_dir)) or build_tree(
+            spot_from_dict(sol.meta.spot), TreeConfig.from_dict(sol.meta.tree_config)
+        )
         with self._lock:
             self._lru[solution_dir] = (tree, sol)
             while len(self._lru) > LRU_SIZE:

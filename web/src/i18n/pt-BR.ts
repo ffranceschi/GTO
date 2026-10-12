@@ -18,6 +18,7 @@ export const t = {
     solve: "Resolver",
     combos: (n: string, pct: string) => `${n} combos (${pct})`,
   },
+  common: { loading: "Carregando…", status: "Status", queue: "Fila", street: "Street" },
   progress: {
     title: "Progresso",
     status: {

@@ -16,7 +16,7 @@ from gto_engine import __version__
 from gto_engine.cards import card_str, parse_card
 from gto_engine.game.config import TreeConfig
 from gto_engine.game.hashing import input_hash
-from gto_engine.game.tree import GameTree, Spot
+from gto_engine.game.tree import TREE_ARRAYS, GameTree, Spot
 from gto_engine.ranges import format_range, parse_range
 from gto_engine.solver.dcfr import SolveResult
 from gto_engine.solver.params import SolveParams
@@ -110,8 +110,12 @@ def solution_from_result(
     )
 
 
-def save_solution_dir(solution: Solution, directory: Path) -> int:
-    """Grava atomicamente (diretório temporário + rename). Retorna o tamanho em bytes."""
+def save_solution_dir(solution: Solution, directory: Path, tree: GameTree | None = None) -> int:
+    """Grava atomicamente (diretório temporário + rename). Retorna o tamanho em bytes.
+
+    Com `tree`, grava também a árvore em arrays (`tree_*.npy` + `tree.json`), para que a
+    solução possa ser reaberta sem reconstruir a árvore (T101).
+    """
     directory = Path(directory)
     tmp = directory.with_name(directory.name + ".tmp")
     if tmp.exists():
@@ -122,6 +126,8 @@ def save_solution_dir(solution: Solution, directory: Path) -> int:
         np.save(
             tmp / f"{name}.npy", np.ascontiguousarray(getattr(solution, name)), allow_pickle=False
         )
+    if tree is not None:
+        save_tree(tree, tmp)
     if directory.exists():
         shutil.rmtree(directory)
     os.replace(tmp, directory)
@@ -155,3 +161,27 @@ def open_solution_dir(directory: Path) -> Solution:
 
 def dir_size(directory: Path) -> int:
     return sum(p.stat().st_size for p in Path(directory).iterdir())
+
+
+def save_tree(tree: GameTree, directory: Path) -> None:
+    arrays, meta = tree.to_arrays()
+    for name, arr in arrays.items():
+        np.save(Path(directory) / f"tree_{name}.npy", np.ascontiguousarray(arr), allow_pickle=False)
+    (Path(directory) / "tree.json").write_text(json.dumps(meta))
+
+
+def open_tree_dir(directory: Path) -> GameTree | None:
+    """Reabre a árvore gravada (arrays via mmap); None se a solução não a tiver."""
+    directory = Path(directory)
+    meta_path = directory / "tree.json"
+    if not meta_path.exists():
+        return None
+    try:
+        meta = json.loads(meta_path.read_text())
+        arrays = {
+            n: np.load(directory / f"tree_{n}.npy", mmap_mode="r", allow_pickle=False)
+            for n in TREE_ARRAYS
+        }
+    except (OSError, ValueError) as exc:
+        raise SolutionFormatError("Árvore gravada ausente ou corrompida.") from exc
+    return GameTree.from_arrays(arrays, meta)

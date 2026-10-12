@@ -50,6 +50,12 @@ def problem(
     return JSONResponse(body, status_code=status, media_type="application/problem+json")
 
 
+def fmt_num(x: float, digits: int = 2) -> str:
+    """Número no formato pt-BR (vírgula decimal, ponto de milhar)."""
+    s = f"{x:,.{digits}f}"
+    return s.replace(",", "_").replace(".", ",").replace("_", ".")
+
+
 def not_found(what: str = "Recurso") -> ApiError:
     return ApiError(404, "nao_encontrado", f"{what} não encontrado.")
 
@@ -88,7 +94,10 @@ def install_handlers(app: FastAPI) -> None:
         code = {404: "nao_encontrado", 405: "metodo_nao_permitido"}.get(
             exc.status_code, "erro_http"
         )
-        detail = "Recurso não encontrado." if exc.status_code == 404 else str(exc.detail)
+        detail = {
+            404: "Recurso não encontrado.",
+            405: "Método não permitido para este recurso.",
+        }.get(exc.status_code, "Erro na requisição.")
         return problem(exc.status_code, code, detail)
 
 
@@ -106,5 +115,19 @@ def _pt(e: dict[str, Any]) -> str:
         "too_long": "Itens demais.",
         "float_parsing": "Deve ser um número.",
         "int_parsing": "Deve ser um número inteiro.",
+        "int_type": "Deve ser um número inteiro.",
+        "float_type": "Deve ser um número.",
+        "string_type": "Deve ser um texto.",
+        "bool_type": "Deve ser verdadeiro ou falso.",
+        "bool_parsing": "Deve ser verdadeiro ou falso.",
+        "list_type": "Deve ser uma lista.",
+        "dict_type": "Deve ser um objeto.",
+        "model_type": "Deve ser um objeto.",
+        "literal_error": "Valor fora das opções permitidas.",
+        "enum": "Valor fora das opções permitidas.",
+        "json_invalid": "JSON inválido.",
+        "string_too_short": "Texto curto demais.",
+        "string_too_long": "Texto longo demais.",
+        "extra_forbidden": "Campo não permitido.",
     }
-    return msgs.get(t, str(e.get("msg", "Valor inválido.")))
+    return msgs.get(t, "Valor inválido.")

@@ -53,11 +53,11 @@ export function SolveProgress({ solveId, job, stale, onRestore, onNewSolve }: Pr
         </div>
       )}
       <dl>
-        <dt>Status</dt>
+        <dt>{t.common.status}</dt>
         <dd data-testid="status">{t.progress.status[job.status] ?? job.status}</dd>
         {job.queuePosition !== null && (
           <>
-            <dt>Fila</dt>
+            <dt>{t.common.queue}</dt>
             <dd>{t.progress.queuePosition(job.queuePosition)}</dd>
           </>
         )}

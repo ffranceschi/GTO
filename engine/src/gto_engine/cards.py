@@ -89,3 +89,19 @@ def blocked_mask(dead_cards: list[int] | tuple[int, ...] | np.ndarray) -> np.nda
         dead[int(c)] = True
     mask: np.ndarray = dead[COMBO_CARDS[:, 0]] | dead[COMBO_CARDS[:, 1]]
     return mask
+
+
+_CONFLICT: np.ndarray | None = None
+
+
+def combo_conflicts() -> np.ndarray:
+    """Matriz (1326, 1326) booleana: True quando dois combos compartilham carta."""
+    global _CONFLICT
+    if _CONFLICT is None:
+        has = np.zeros((N_COMBOS, N_CARDS), dtype=bool)
+        has[np.arange(N_COMBOS), COMBO_CARDS[:, 0]] = True
+        has[np.arange(N_COMBOS), COMBO_CARDS[:, 1]] = True
+        m = (has.astype(np.uint8) @ has.T.astype(np.uint8)) > 0
+        m.setflags(write=False)
+        _CONFLICT = m
+    return _CONFLICT

@@ -9,6 +9,7 @@ from gto_engine.game.estimate import TreeEstimate as EngineEstimate
 from gto_engine.game.estimate import estimate_tree
 from gto_engine.game.tree import Spot
 
+from gto_api.errors import fmt_num
 from gto_api.schemas.solves import Problem, SpotWithTree
 from gto_api.schemas.trees import TreeEstimate
 
@@ -41,7 +42,8 @@ def suggestions(spot: Spot, cfg: TreeConfig, est: EngineEstimate, max_bytes: int
     if spot.street == Street.FLOP:
         out.append("Ou resolva a partir do turn, que exige bem menos memória.")
     out.append(
-        f"Memória estimada: {est.estimated_bytes / GIB:.2f} GiB; limite: {max_bytes / GIB:.2f} GiB."
+        f"Memória estimada: {fmt_num(est.estimated_bytes / GIB)} GiB; "
+        f"limite: {fmt_num(max_bytes / GIB)} GiB."
     )
     return out
 

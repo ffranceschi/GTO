@@ -155,8 +155,17 @@ def estimate_tree(spot: Spot, config: TreeConfig) -> TreeEstimate:
     train = 8 * (c.acts[0] * combos[0] + c.acts[1] * combos[1])
     boards = comb(N_CARDS - len(spot.board), 5 - len(spot.board))
     tables = boards * (combos[0] + combos[1]) * 12  # força int32 + ordem int64
-    solution = 4 * (c.acts[0] * combos[0] + c.acts[1] * combos[1]) + 8 * (
-        c.decs[0] * combos[0] + c.decs[1] * combos[1]
+    nodes = c.dec + c.chance + c.term
+    tree_bytes = (
+        nodes * 73  # tipo, jogador, filhos, investimentos, board, chance, street, subárvore…
+        + (nodes - 1) * 25  # arestas: tipo, valor, fração, id e rótulo
+        + tables  # forças (int32) e ordens (int64) por board
+        + 24 * (combos[0] + combos[1]) * 8  # permutações de mãos do isomorfismo
+    )
+    solution = (
+        4 * (c.acts[0] * combos[0] + c.acts[1] * combos[1])
+        + 8 * (c.decs[0] * combos[0] + c.decs[1] * combos[1])
+        + tree_bytes  # árvore gravada junto (T101)
     )
     raw = {3: (N_CARDS - 3) * (N_CARDS - 4), 4: N_CARDS - 4, 5: 1}[len(spot.board)]
     canonical = {3: sum(branches[1:]), 4: branches[0] if branches else 1, 5: 1}[len(spot.board)]

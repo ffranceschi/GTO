@@ -167,7 +167,7 @@ export function TreeConfigEditor({ value, onChange, spot, onEstimate }: Props) {
       <table className="sizes">
         <thead>
           <tr>
-            <th>Street</th>
+            <th>{t.common.street}</th>
             <th>Bets OOP (%)</th>
             <th>Bets IP (%)</th>
             <th>Raises OOP (%)</th>

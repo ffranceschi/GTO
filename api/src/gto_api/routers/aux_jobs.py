@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 
 from gto_api.db.models import AuxJobRow, SolveRow, new_id, now_utc
-from gto_api.errors import ApiError, not_found
+from gto_api.errors import ApiError, fmt_num, not_found
 from gto_api.jobs.runner import Job, JobStateError, UnknownJobError
 from gto_api.schemas.aux import AuxJob, StorageUsage
 from gto_api.schemas.solves import Problem
@@ -123,7 +123,8 @@ async def import_solution(file: UploadFile, request: Request) -> AuxJob:
                     raise ApiError(
                         413,
                         "arquivo_grande_demais",
-                        f"O arquivo passa do limite de {st.max_import_bytes / 1024**3:.2f} GiB "
+                        "O arquivo passa do limite de "
+                        f"{fmt_num(st.max_import_bytes / 1024**3)} GiB "
                         "para importação.",
                     )
                 out.write(chunk)

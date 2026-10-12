@@ -97,3 +97,10 @@ def test_range_sem_combos_apos_bloqueios() -> None:
     w = np.zeros(1326)
     with pytest.raises(InvalidSpotError):
         Spot(Range(w), parse_range("KK"), board, 10, 50)
+
+
+def test_sem_confronto_possivel() -> None:
+    board = tuple(parse_card(c) for c in ("2s", "2h", "2d", "2c", "3s"))
+    with pytest.raises(InvalidSpotError) as exc:
+        Spot(parse_range("22, 33"), parse_range("22, 33"), board, 10, 5)
+    assert "confronto" in str(exc.value)

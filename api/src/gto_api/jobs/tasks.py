@@ -46,7 +46,7 @@ def solve_job(payload: dict[str, Any], ctl: WorkerControl, emit: Emit) -> dict[s
     if ctl.cancelled:
         raise JobCancelled()
     directory = Path(payload["solutions_dir"]) / sol.meta.input_hash
-    size = save_solution_dir(sol, directory)
+    size = save_solution_dir(sol, directory, tree)
     return {
         "status": "stopped" if r.stop_reason == "user_stopped" else "completed",
         "stop_reason": r.stop_reason,

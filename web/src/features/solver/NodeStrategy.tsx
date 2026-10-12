@@ -27,7 +27,7 @@ export function useNodeView(solveId: string, path: string) {
 export function NodeStrategy({ solveId, path = "" }: { solveId: string; path?: string }) {
   const { view, error } = useNodeView(solveId, path);
   if (error) return <p className="error">{error}</p>;
-  if (!view) return <p>Carregando…</p>;
+  if (!view) return <p>{t.common.loading}</p>;
   return <NodeStrategyView view={view} />;
 }
 

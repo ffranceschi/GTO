@@ -132,3 +132,23 @@ docker run -p 127.0.0.1:8000:8000 -v gto-data:/data gto-api   # só localhost (R
 
 A primeira requisição após `health = ready` não deve sofrer compilação JIT (cache gravado no
 build e warm-up no startup).
+
+## Resultados medidos (T100, 2026-10-12)
+
+Máquina: Apple M1 Max (10 núcleos, 32 GB), macOS, execução nativa. É **mais forte** que o
+hardware de referência do plano (8 núcleos, 16 GB): os tempos abaixo precisam ser repetidos na
+máquina de referência antes de valerem como prova dos orçamentos.
+
+| Verificação | Orçamento | Medido |
+|-------------|-----------|--------|
+| Motor (`engine/tests`) | — | 131+ testes passando (inclui exaustivo do avaliador, Kuhn, Leduc) |
+| SC-001 — river de referência | < 1% em < 30 s | 0,245% em 0,02 s (85 iterações) |
+| Turn de referência | < 1% em < 60 s | 0,861% em 13,5 s (60 iterações) |
+| Flop de referência | < 1% em < 10 min, ≤ 4 GiB | 0,979% em 392 s (69 iterações), pico RSS 1,80 GiB |
+| T101 — abrir solução de flop a frio + nó raiz | ≤ 200 ms | 85 ms |
+| Cálculo leve na requisição (pior caso, flop padrão) | ≤ 200 ms | passa (`test_bench_light`) |
+| SC-008 — pausar/retomar/parar/cancelar (runner de processos) | < 1 s | passa (`test_control_latency`) |
+| §3 API (health, estimativa, solve, nós, exportar, importar, fixar, storage) | — | fluxo completo ok via curl |
+| §4 Front | — | 6 testes Vitest + 6 E2E Playwright passando |
+| §5 Docker | — | **não validado**: daemon do Docker parado na máquina |
+| SC-009 — configurar e iniciar o river de referência em < 2 min | < 2 min | **pendente de validação manual** (o E2E faz o fluxo em segundos, mas não mede uma pessoa) |

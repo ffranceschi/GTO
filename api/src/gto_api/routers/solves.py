@@ -15,7 +15,7 @@ from gto_engine.game.tree import InvalidPathError
 from sqlalchemy import select
 
 from gto_api.db.models import SolveRow, new_id, now_utc
-from gto_api.errors import ApiError, not_found
+from gto_api.errors import ApiError, fmt_num, not_found
 from gto_api.jobs.runner import Job, JobStateError, UnknownJobError
 from gto_api.schemas.aux import PinRequest
 from gto_api.schemas.solves import (
@@ -113,8 +113,8 @@ async def create_solve(req: SolveRequest, request: Request) -> Any:
         raise ApiError(
             422,
             "arvore_grande_demais",
-            f"A árvore precisa de cerca de {est.estimated_bytes / GIB:.2f} GiB de memória e o "
-            f"limite é {settings.max_solve_memory_bytes / GIB:.2f} GiB. Reduza os tamanhos de "
+            f"A árvore precisa de cerca de {fmt_num(est.estimated_bytes / GIB)} GiB de memória e o "
+            f"limite é {fmt_num(settings.max_solve_memory_bytes / GIB)} GiB. Reduza os tamanhos de "
             "aposta, o limite de raises ou os ranges.",
         )
     h = input_hash(spot, cfg, params)

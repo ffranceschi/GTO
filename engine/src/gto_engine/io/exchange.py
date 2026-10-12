@@ -20,6 +20,7 @@ from typing import Any
 import numpy as np
 from numpy.lib import format as npformat
 
+from gto_engine.game.tree import TREE_ARRAYS
 from gto_engine.io.solution_dir import (
     ARRAYS,
     FORMAT_VERSION,
@@ -31,7 +32,7 @@ from gto_engine.io.solution_dir import (
 from gto_engine.solver.finalize import SolveCancelled
 
 Cancelled = SolveCancelled
-CHUNK_BYTES = 8 * 1024 * 1024
+CHUNK_BYTES = int(os.environ.get("GTO_EXCHANGE_CHUNK_BYTES", 8 * 1024 * 1024))
 META_MEMBER = "meta.json.npy"
 
 
@@ -52,6 +53,12 @@ def export_npz(
     directory, target = Path(directory), Path(target)
     meta = read_meta(directory)
     arrays = {n: np.load(directory / f"{n}.npy", mmap_mode="r", allow_pickle=False) for n in ARRAYS}
+    if (directory / "tree.json").exists():  # árvore gravada (T101) viaja junto
+        arrays["tree.json"] = np.frombuffer((directory / "tree.json").read_bytes(), dtype=np.uint8)
+        for n in TREE_ARRAYS:
+            arrays[f"tree_{n}"] = np.load(
+                directory / f"tree_{n}.npy", mmap_mode="r", allow_pickle=False
+            )
     meta_bytes = np.frombuffer(
         json.dumps(asdict(meta), ensure_ascii=False).encode(), dtype=np.uint8
     )
@@ -128,14 +135,33 @@ def import_npz(
                     f"Versão de formato {meta.format_version} não suportada "
                     f"(esperado {FORMAT_VERSION})."
                 )
-            infos = {a: zf.getinfo(f"{a}.npy") for a in ARRAYS}
+            names_to_copy = list(ARRAYS)
+            tree_json = b""
+            if "tree.json.npy" in names:
+                tree_members = [f"tree_{n}" for n in TREE_ARRAYS]
+                lacking = [m for m in tree_members if f"{m}.npy" not in names]
+                if lacking:
+                    raise SolutionFormatError(
+                        "Árvore incompleta no arquivo: faltam " + ", ".join(lacking) + "."
+                    )
+                names_to_copy += tree_members
+                with zf.open("tree.json.npy") as fp:
+                    _read_header(fp)
+                    tree_json = fp.read()
+                try:
+                    json.loads(tree_json.decode())
+                except ValueError as exc:
+                    raise SolutionFormatError("Metadados da árvore inválidos.") from exc
+            infos = {a: zf.getinfo(f"{a}.npy") for a in names_to_copy}
             total = sum(i.file_size for i in infos.values()) or 1
             done = 0
             if tmp.exists():
                 shutil.rmtree(tmp)
             tmp.mkdir(parents=True)
             (tmp / "meta.json").write_text(json.dumps(raw, ensure_ascii=False, indent=2))
-            for name in ARRAYS:
+            if tree_json:
+                (tmp / "tree.json").write_bytes(tree_json)
+            for name in names_to_copy:
                 with zf.open(f"{name}.npy") as src, open(tmp / f"{name}.npy", "wb") as dst:
                     shape, fortran, dtype = _read_header(src)
                     header = {

@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from gto_engine.cards import N_CARDS, blocked_mask, card_str
+from gto_engine.cards import N_CARDS, blocked_mask, card_str, combo_conflicts
 from gto_engine.game.config import Street
 from gto_engine.ranges import Range
 
@@ -53,6 +53,14 @@ class Spot:
                 raise InvalidSpotError(
                     f"O range {name} não tem combos possíveis depois dos bloqueios do board."
                 )
+        w0 = np.where(blocked, 0.0, self.oop_range.weights)
+        w1 = np.where(blocked, 0.0, self.ip_range.weights)
+        i0, i1 = np.flatnonzero(w0), np.flatnonzero(w1)
+        free = ~combo_conflicts()[np.ix_(i0, i1)]
+        if float((w0[i0][:, None] * w1[i1][None, :] * free).sum()) <= 0:
+            raise InvalidSpotError(
+                "Não há confronto possível: todo combo OOP divide carta com todo combo IP."
+            )
 
     @property
     def street(self) -> Street:
@@ -118,7 +126,91 @@ class Players:
     n_cards: int  # tamanho do baralho
 
 
+KIND_CODES = ("check", "bet", "call", "raise", "fold", "allin", "card")
+STREET_CODES = ("flop", "turn", "river")
+# arrays que descrevem a árvore (gravados como tree_<nome>.npy no diretório da solução — T101)
+TREE_ARRAYS = (
+    "node_type",
+    "node_player",
+    "child_start",
+    "child_count",
+    "children_arr",
+    "inv",
+    "board_id",
+    "chance_card",
+    "chance_factor",
+    "node_street",
+    "dec_index",
+    "dec_node",
+    "dec_offset",
+    "dec_combo_offset",
+    "dec_board_start",
+    "dec_boards",
+    "subtree_size",
+    "iso_start",
+    "iso_card",
+    "iso_perm",
+    "hand_perms0",
+    "hand_perms1",
+    "strengths0",
+    "strengths1",
+    "orders0",
+    "orders1",
+    "hands0",
+    "hands1",
+    "hand_cards0",
+    "hand_cards1",
+    "weights0",
+    "weights1",
+    "edge_kind",
+    "edge_amount",
+    "edge_frac",
+    "edge_id",
+    "edge_label",
+)
+
+
 class GameTree:
+    """Árvore vetorizada, inteiramente em arrays (pode ser reaberta do disco via mmap)."""
+
+    node_type: np.ndarray
+    node_player: np.ndarray
+    child_start: np.ndarray
+    child_count: np.ndarray
+    children_arr: np.ndarray
+    inv: np.ndarray
+    board_id: np.ndarray
+    chance_card: np.ndarray
+    chance_factor: np.ndarray
+    node_street: np.ndarray
+    dec_index: np.ndarray
+    dec_node: np.ndarray
+    dec_offset: np.ndarray
+    dec_combo_offset: np.ndarray
+    dec_board_start: np.ndarray
+    dec_boards: np.ndarray
+    subtree_size: np.ndarray
+    iso_start: np.ndarray
+    iso_card: np.ndarray
+    iso_perm: np.ndarray
+    hand_perms0: np.ndarray
+    hand_perms1: np.ndarray
+    strengths0: np.ndarray
+    strengths1: np.ndarray
+    orders0: np.ndarray
+    orders1: np.ndarray
+    hands0: np.ndarray
+    hands1: np.ndarray
+    hand_cards0: np.ndarray
+    hand_cards1: np.ndarray
+    weights0: np.ndarray
+    weights1: np.ndarray
+    edge_kind: np.ndarray
+    edge_amount: np.ndarray
+    edge_frac: np.ndarray
+    edge_id: np.ndarray
+    edge_label: np.ndarray
+
     def __init__(
         self,
         assembler: TreeAssembler,
@@ -130,76 +222,60 @@ class GameTree:
         hand_label: Any = None,
         hand_perms: tuple[np.ndarray, np.ndarray] | None = None,
     ) -> None:
-        self._nodes = assembler.nodes
-        self.players = players
-        self.pot = float(pot)
-        self.boards = boards
-        self.street = street
-        self._hand_label = hand_label
-        self.effective_stack = 0.0
-        self.initial_board: tuple[int, ...] = ()
-        self.group: list[int] = [0]
-        self.root = 0
-        n = len(self._nodes)
-        self.node_type = np.array([nd.kind for nd in self._nodes], dtype=np.int64)
-        self.node_player = np.array([nd.player for nd in self._nodes], dtype=np.int64)
-        self.child_start = np.zeros(n, dtype=np.int64)
-        self.child_count = np.zeros(n, dtype=np.int64)
-        kids: list[int] = []
-        for i, nd in enumerate(self._nodes):
-            self.child_start[i] = len(kids)
-            self.child_count[i] = len(nd.children)
-            kids += nd.children
-        self.children_arr = np.array(kids, dtype=np.int64)
-        self.inv = np.array([nd.inv for nd in self._nodes], dtype=np.float64).reshape(n, 2)
-        self.board_id = np.array([nd.board_id for nd in self._nodes], dtype=np.int64)
-        self.chance_card = np.array([nd.chance_card for nd in self._nodes], dtype=np.int64)
-        self.chance_factor = np.array([nd.chance_factor for nd in self._nodes], dtype=np.float64)
-        # layout das decisões
-        self.dec_index = -np.ones(n, dtype=np.int64)
+        nodes = assembler.nodes
+        n = len(nodes)
+        a: dict[str, np.ndarray] = {}
+        a["node_type"] = np.array([nd.kind for nd in nodes], dtype=np.int64)
+        a["node_player"] = np.array([nd.player for nd in nodes], dtype=np.int64)
+        a["child_count"] = np.array([len(nd.children) for nd in nodes], dtype=np.int64)
+        a["child_start"] = np.concatenate([[0], np.cumsum(a["child_count"])[:-1]]).astype(np.int64)
+        a["children_arr"] = np.array([c for nd in nodes for c in nd.children], dtype=np.int64)
+        a["inv"] = np.array([nd.inv for nd in nodes], dtype=np.float64).reshape(n, 2)
+        a["board_id"] = np.array([nd.board_id for nd in nodes], dtype=np.int64)
+        a["chance_card"] = np.array([nd.chance_card for nd in nodes], dtype=np.int64)
+        a["chance_factor"] = np.array([nd.chance_factor for nd in nodes], dtype=np.float64)
+        a["node_street"] = np.array([STREET_CODES.index(nd.street) for nd in nodes], dtype=np.int8)
+        dec_index = -np.ones(n, dtype=np.int64)
         offs: list[int] = []
         coffs: list[int] = []
-        nodes: list[int] = []
+        dec: list[int] = []
         o = co = 0
-        for i, nd in enumerate(self._nodes):
+        for i, nd in enumerate(nodes):
             if nd.kind == NODE_DECISION:
-                self.dec_index[i] = len(nodes)
-                nodes.append(i)
+                dec_index[i] = len(dec)
+                dec.append(i)
                 offs.append(o)
                 coffs.append(co)
                 nh = len(players.hands[nd.player])
                 o += len(nd.children) * nh
                 co += nh
-        self.dec_node = np.array(nodes, dtype=np.int64)
+        a["dec_index"] = dec_index
+        a["dec_node"] = np.array(dec, dtype=np.int64)
+        a["dec_offset"] = np.array([*offs, o], dtype=np.int64)
+        a["dec_combo_offset"] = np.array([*coffs, co], dtype=np.int64)
         bstart: list[int] = []
         bflat: list[int] = []
-        for i in nodes:
+        for i in dec:
             bstart.append(len(bflat))
-            bflat += list(self._nodes[i].boards) or [0]
-        self.dec_board_start = np.array([*bstart, len(bflat)], dtype=np.int64)
-        self.dec_boards = np.array(bflat, dtype=np.int64)
-        # tamanho da subárvore (para fatiar a finalização em blocos)
+            bflat += list(nodes[i].boards) or [0]
+        a["dec_board_start"] = np.array([*bstart, len(bflat)], dtype=np.int64)
+        a["dec_boards"] = np.array(bflat, dtype=np.int64)
         size = np.ones(n, dtype=np.int64)
         for i in range(n - 1, -1, -1):
-            for c in self._nodes[i].children:
+            for c in nodes[i].children:
                 size[i] += size[c]
-        self.subtree_size = size
-        self.dec_offset = np.array([*offs, o], dtype=np.int64)
-        self.dec_combo_offset = np.array([*coffs, co], dtype=np.int64)
-        self.strategy_size = o
-        self.combo_size = co
-        # isomorfismo: entradas extras de cada filho de chance (carta y, permutação k⁻¹)
+        a["subtree_size"] = size
         istart: list[int] = []
         icard: list[int] = []
         iperm: list[int] = []
-        for nd in self._nodes:
+        for nd in nodes:
             istart.append(len(icard))
             for y, kinv in nd.iso:
                 icard.append(y)
                 iperm.append(kinv)
-        self.iso_start = np.array([*istart, len(icard)], dtype=np.int64)
-        self.iso_card = np.array(icard, dtype=np.int64)
-        self.iso_perm = np.array(iperm, dtype=np.int64)
+        a["iso_start"] = np.array([*istart, len(icard)], dtype=np.int64)
+        a["iso_card"] = np.array(icard, dtype=np.int64)
+        a["iso_perm"] = np.array(iperm, dtype=np.int64)
         if hand_perms is None:
             hand_perms = tuple(  # type: ignore[assignment]
                 np.vstack(
@@ -208,83 +284,156 @@ class GameTree:
                 for h in players.hands
             )
         assert hand_perms is not None
-        self.hand_perms = hand_perms  # (24, n_p): índice da mão π_k(h) na lista do jogador, ou -1
-        self.strengths = strengths  # (n_boards, n_p) int32 por jogador; -1 = bloqueado
-        self.orders = tuple(
-            np.argsort(s, axis=1, kind="stable").astype(np.int64) for s in strengths
+        for p in (0, 1):
+            a[f"hand_perms{p}"] = np.ascontiguousarray(hand_perms[p], dtype=np.int64)
+            a[f"strengths{p}"] = np.ascontiguousarray(strengths[p], dtype=np.int32)
+            a[f"orders{p}"] = np.argsort(strengths[p], axis=1, kind="stable").astype(np.int64)
+            a[f"hands{p}"] = np.asarray(players.hands[p], dtype=np.int64)
+            a[f"hand_cards{p}"] = np.ascontiguousarray(players.hand_cards[p], dtype=np.int64)
+            a[f"weights{p}"] = np.asarray(players.weights[p], dtype=np.float64)
+        strings: dict[str, int] = {}
+
+        def sid(text: str) -> int:
+            return strings.setdefault(text, len(strings))
+
+        edges = [act for nd in nodes for act in nd.actions]
+        a["edge_kind"] = np.array([KIND_CODES.index(e.kind) for e in edges], dtype=np.int8)
+        a["edge_amount"] = np.array([e.amount for e in edges], dtype=np.float64)
+        a["edge_frac"] = np.array(
+            [np.nan if e.pot_fraction is None else e.pot_fraction for e in edges]
         )
+        a["edge_id"] = np.array([sid(e.id) for e in edges], dtype=np.int32)
+        a["edge_label"] = np.array([sid(e.label) for e in edges], dtype=np.int32)
+        meta = {
+            "pot": float(pot),
+            "street": Street(street).value,
+            "boards": [list(b) for b in boards],
+            "n_cards": int(players.n_cards),
+            "strings": list(strings),
+            "effective_stack": 0.0,
+            "initial_board": [],
+            "group": [0],
+        }
+        self._load(a, meta)
+        self._hand_label = hand_label
+
+    @classmethod
+    def from_arrays(cls, arrays: dict[str, np.ndarray], meta: dict[str, Any]) -> GameTree:
+        tree = cls.__new__(cls)
+        tree._load(arrays, meta)
+        tree._hand_label = None
+        return tree
+
+    def _load(self, a: dict[str, np.ndarray], meta: dict[str, Any]) -> None:
+        self._a = a
+        for name in TREE_ARRAYS:
+            setattr(self, name, a[name])
+        self.players = Players(
+            (a["hands0"], a["hands1"]),
+            (a["hand_cards0"], a["hand_cards1"]),
+            (a["weights0"], a["weights1"]),
+            int(meta["n_cards"]),
+        )
+        self.hand_perms = (a["hand_perms0"], a["hand_perms1"])
+        self.strengths = (a["strengths0"], a["strengths1"])
+        self.orders = (a["orders0"], a["orders1"])
+        self.pot = float(meta["pot"])
+        self.street = Street(meta["street"])
+        self.boards = [tuple(b) for b in meta["boards"]]
+        self._strings: list[str] = list(meta["strings"])
+        self.effective_stack = float(meta.get("effective_stack", 0.0))
+        self.initial_board: tuple[int, ...] = tuple(meta.get("initial_board", []))
+        self.group: list[int] = list(meta.get("group", [0]))
+        self.strategy_size = int(a["dec_offset"][-1])
+        self.combo_size = int(a["dec_combo_offset"][-1])
+        self.root = 0
+
+    def to_arrays(self) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+        meta = {
+            "pot": self.pot,
+            "street": self.street.value,
+            "boards": [list(b) for b in self.boards],
+            "n_cards": int(self.players.n_cards),
+            "strings": self._strings,
+            "effective_stack": self.effective_stack,
+            "initial_board": list(self.initial_board),
+            "group": list(self.group),
+        }
+        return {name: self._a[name] for name in TREE_ARRAYS}, meta
 
     # ---- consulta ----
     @property
     def n_nodes(self) -> int:
-        return len(self._nodes)
+        return int(self.node_type.shape[0])
 
     @property
     def n_decision_nodes(self) -> int:
-        return len(self.dec_node)
+        return int(self.dec_node.shape[0])
 
     def n_hands(self, player: str | int) -> int:
         p = PLAYERS.index(player) if isinstance(player, str) else player
         return len(self.players.hands[p])
 
     def decision_shapes(self) -> list[tuple[int, int]]:
-        return [(len(self._nodes[i].children), self._nodes[i].player) for i in self.dec_node]
+        return [(int(self.child_count[i]), int(self.node_player[i])) for i in self.dec_node]
 
     def street_of(self, node: int) -> str:
-        return self._nodes[node].street
+        return STREET_CODES[int(self.node_street[node])]
 
     def iso_members(self, node: int) -> list[tuple[int, int]]:
-        return list(self._nodes[node].iso)
+        lo, hi = int(self.iso_start[node]), int(self.iso_start[node + 1])
+        return [(int(self.iso_card[m]), int(self.iso_perm[m])) for m in range(lo, hi)]
 
     def node_kind(self, node: int) -> str:
-        return _KIND[self._nodes[node].kind]
+        return _KIND[int(self.node_type[node])]
 
     def player(self, node: int) -> str:
-        return PLAYERS[self._nodes[node].player]
+        return PLAYERS[int(self.node_player[node])]
 
     def player_index(self, node: int) -> int:
-        return self._nodes[node].player
+        return int(self.node_player[node])
+
+    def _edges(self, node: int) -> range:
+        s = int(self.child_start[node])
+        return range(s, s + int(self.child_count[node]))
 
     def actions(self, node: int) -> list[Action]:
-        return list(self._nodes[node].actions)
+        out = []
+        for e in self._edges(node):
+            frac = float(self.edge_frac[e])
+            out.append(
+                Action(
+                    KIND_CODES[int(self.edge_kind[e])],
+                    self._strings[int(self.edge_id[e])],
+                    float(self.edge_amount[e]),
+                    None if np.isnan(frac) else frac,
+                    self._strings[int(self.edge_label[e])],
+                )
+            )
+        return out
 
     def children(self, node: int) -> list[int]:
-        return list(self._nodes[node].children)
+        return [int(self.children_arr[e]) for e in self._edges(node)]
 
     def investments(self, node: int) -> tuple[float, float]:
-        a, b = self._nodes[node].inv
-        return float(a), float(b)
+        return float(self.inv[node, 0]), float(self.inv[node, 1])
 
     def pot_at(self, node: int) -> float:
-        a, b = self._nodes[node].inv
-        return float(self.pot + a + b)
+        return float(self.pot + self.inv[node, 0] + self.inv[node, 1])
 
     def child(self, node: int, action_id: str) -> int:
-        nd = self._nodes[node]
-        for a, c in zip(nd.actions, nd.children, strict=True):
-            if a.id == action_id:
-                return c
+        for e in self._edges(node):
+            if self._strings[int(self.edge_id[e])] == action_id:
+                return int(self.children_arr[e])
         raise InvalidPathError(f"A ação '{action_id}' não existe neste nó.")
 
     def node_at(self, path: Sequence[str]) -> int:
         n = self.root
         for step in path:
-            if self._nodes[n].kind in (NODE_FOLD, NODE_SHOWDOWN):
+            if int(self.node_type[n]) in (NODE_FOLD, NODE_SHOWDOWN):
                 raise InvalidPathError(f"O caminho continua depois de um nó terminal ('{step}').")
             n = self.child(n, step)
         return n
-
-    def path_to(self, node: int) -> list[str]:
-        parent = {
-            c: (i, a.id)
-            for i, nd in enumerate(self._nodes)
-            for a, c in zip(nd.actions, nd.children, strict=True)
-        }
-        out: list[str] = []
-        while node != self.root:
-            node, aid = parent[node]
-            out.append(aid)
-        return out[::-1]
 
     def strategy_slice(self, node: int) -> slice:
         d = int(self.dec_index[node])

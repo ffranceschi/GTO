@@ -419,6 +419,11 @@ WebSocket em [contracts/websocket.md](./contracts/websocket.md). Cliente TypeScr
   recalcular na requisição violaria o Princípio V v2.0.0 (orçamento de até 2 s no flop). O cálculo
   passa a ser a fase final do próprio job de solve (R3, item 3).
 - Regrets não são persistidos: pausar/retomar vale enquanto o processo do solve existir.
+- **A árvore também é gravada** (T101): `tree.json` + `tree_*.npy` (tipos de nó, filhos, ações
+  como códigos + tabela de textos, investimentos, isomorfismo, permutações de mãos, tabelas de
+  força/ordem). Reabrir uma solução lê esses arrays por mmap em vez de chamar `build_tree`; no
+  flop de referência, abrir a frio e ver a raiz levou 85 ms (antes ≈ 2,8 s). Os arrays da árvore
+  viajam no `.npz` exportado; soluções sem árvore continuam abrindo por reconstrução.
 
 **Racional**: `.npz` comprimido não pode ser mapeado em memória. Ler um nó exigiria descomprimir
 o array inteiro, o que leva segundos numa solução de flop de centenas de MB e passaria do limite
